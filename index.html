@@ -76,24 +76,82 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-                <button type="button" onclick="switchTab('historico')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center" title="Ver lista de relatórios realizados">
-                    <i class="fa-solid fa-folder-open mr-1.5"></i> Relatórios Realizados
-                </button>
-                <button type="button" onclick="sendToGoogleSheets()" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center">
-                    <i class="fa-solid fa-file-excel mr-1.5"></i> Enviar p/ Google Sheet
-                </button>
-                <button type="button" onclick="printReport()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center">
-                    <i class="fa-solid fa-print mr-1.5"></i> Imprimir / Salvar PDF
-                </button>
+            <div id="header-acoes" class="hidden flex-wrap items-center justify-end gap-x-2 gap-y-2">
+
+                <!-- navegação -->
+                <div class="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+                    <button type="button" onclick="mostrarEcraInicial()" class="px-2.5 py-1.5 hover:bg-white/15 text-slate-200 hover:text-white text-xs font-bold rounded-lg transition flex items-center" title="Voltar ao ecrã inicial">
+                        <i class="fa-solid fa-house sm:mr-1.5"></i><span class="hidden sm:inline">Início</span>
+                    </button>
+                    <button type="button" onclick="limparCampos()" class="px-2.5 py-1.5 hover:bg-white/15 text-slate-200 hover:text-white text-xs font-bold rounded-lg transition flex items-center" title="Limpar todos os campos e começar um relatório novo">
+                        <i class="fa-solid fa-eraser sm:mr-1.5"></i><span class="hidden sm:inline">Limpar</span>
+                    </button>
+                    <button type="button" onclick="switchTab('historico')" class="px-2.5 py-1.5 hover:bg-white/15 text-slate-200 hover:text-white text-xs font-bold rounded-lg transition flex items-center" title="Ver lista de relatórios da Folha1">
+                        <i class="fa-solid fa-folder-open sm:mr-1.5"></i><span class="hidden sm:inline">Relatórios</span>
+                    </button>
+                </div>
+
+                <span class="hidden sm:block w-px h-7 bg-white/15"></span>
+
+                <!-- ações sobre o relatório em edição -->
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="sendToGoogleSheets()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center">
+                        <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Enviar
+                    </button>
+                    <button type="button" onclick="printReport()" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center">
+                        <i class="fa-solid fa-print mr-1.5"></i> Imprimir
+                    </button>
+                </div>
             </div>
         </div>
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         
+        <!-- ECRÃ INICIAL -->
+        <div id="ecra-inicial" class="no-print py-10 sm:py-16">
+            <div class="max-w-3xl mx-auto text-center mb-10">
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">Relatórios de Ensaio de Lavagem</h2>
+                <p class="text-sm text-slate-500 mt-2">O que quer fazer?</p>
+            </div>
+
+            <div class="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <button type="button" onclick="novoRelatorio()" class="group text-left bg-white border-2 border-slate-200 hover:border-brand-500 rounded-2xl p-6 shadow-sm hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white flex items-center justify-center mb-4 transition">
+                        <i class="fa-solid fa-file-circle-plus text-xl"></i>
+                    </div>
+                    <h3 class="text-base font-black text-slate-800">Criar novo relatório</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Começa com todos os campos vazios e um utensílio. Pode acrescentar mais à medida que precisar.
+                    </p>
+                </button>
+
+                <button type="button" onclick="abrirRelatorios()" class="group text-left bg-white border-2 border-slate-200 hover:border-emerald-500 rounded-2xl p-6 shadow-sm hover:shadow-lg transition">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white flex items-center justify-center mb-4 transition">
+                        <i class="fa-solid fa-folder-open text-xl"></i>
+                    </div>
+                    <h3 class="text-base font-black text-slate-800">Abrir relatório</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                        Lista os relatórios da Folha1 para ver, partilhar, descarregar ou editar.
+                    </p>
+                </button>
+            </div>
+
+            <div id="ecra-inicial-rascunho" class="hidden max-w-3xl mx-auto mt-6">
+                <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-slate-500">
+                    <span>Ficou um relatório a meio: <span id="rascunho-id" class="font-bold text-slate-700"></span></span>
+                    <button type="button" onclick="continuarRascunho()" class="text-brand-600 hover:text-brand-800 font-bold underline">
+                        Continuar a editar
+                    </button>
+                    <button type="button" onclick="descartarRascunho()" class="w-7 h-7 flex items-center justify-center bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg border border-slate-200 hover:border-rose-200 transition" title="Descartar este relatório a meio">
+                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Tab Navigation -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-1.5 mb-6 no-print overflow-x-auto">
+        <div id="tabs-nav" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-1.5 mb-6 no-print overflow-x-auto">
             <div class="flex items-center min-w-max space-x-1">
                 <button id="btn-tab-geral" onclick="switchTab('geral')" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center bg-brand-700 text-white shadow">
                     <i class="fa-solid fa-circle-info mr-2"></i> 1. Geral
@@ -117,7 +175,7 @@
         </div>
 
         <!-- FORM TABS CONTAINER (no-print) -->
-        <div id="form-container" class="no-print">
+        <div id="form-container" class="hidden no-print">
             
             <div id="tab-geral" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
                 <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider border-b border-slate-200 pb-2">
@@ -556,53 +614,6 @@
     <script>
         const DEFAULT_GS_URL = "https://script.google.com/macros/s/AKfycbwSSJKMzAKUtRsHMsjsT3SooM5KtyWbG6je5rWIR57IG7XjAzIc_VFs6-mOgqQdHdxIXw/exec";
 
-        // Sample Initial Fill Data
-        const SAMPLE_DATA = {
-            id: "MW-ARCOR-2026-01",
-            data: "2026-09-08",
-            cliente: "ARCOR - Grupo Alimentar",
-            clienteLogo: "",
-            setor: "Padaria & Pastelaria",
-            tecnico: "Alexandre Neves",
-            maquina: "MultiWasher MW-300",
-            serialNumber: "MW-2026-8891",
-
-            // Utensílios (lista dinâmica — começa com 1)
-            utensilios: [
-                {
-                    tipo: "Tabuleiros lisos",
-                    material: "Alumínio",
-                    sujidade: "Carbonizado Padaria",
-                    objetivo: "Descarbonização",
-                    vaporIni: "3 min @ 100°C",
-                    lavagem: "10 min @ 65°C (Detergente Alcalino 1.5%)",
-                    centrifInter: "2 min (1200 RPM)",
-                    enxague: "5 min @ 80°C (Água Desmineralizada)",
-                    centrifFin: "3 min (1500 RPM)",
-                    vaporFin: "2 min (Esterilização Termossensível)"
-                }
-            ],
-
-            // Fotos 1 a 10
-            fotos: [
-                { url: "", desc: "Superfície antes da lavagem" },
-                { url: "", desc: "Superfície após enxaguamento final" },
-                { url: "", desc: "Detalhe do canto da bandeja" },
-                { url: "", desc: "Verificação de acúmulo de gordura" },
-                { url: "", desc: "Inspeção pós-secagem" },
-                { url: "", desc: "Molde - Pré" },
-                { url: "", desc: "Molde - Pós" },
-                { url: "", desc: "Zona crítica de vedação" },
-                { url: "", desc: "Amostragem de swab ATP" },
-                { url: "", desc: "Visão geral da câmara de lavagem" }
-            ],
-            videoUrl: "",
-
-            // Considerações & Conclusão
-            consideracoesPrevias: "Superfície dos utensílios apresentava incrustação acentuada antes do ensaio.",
-            consideracoes: "O ciclo de enxaguamento reduziu significativamente a condutividade da água residual.",
-            conclusao: "Processo de lavagem APROVADO. Desempenho excelente com remoção completa dos resíduos."
-        };
 
         // Current App State
         let appData = {};
@@ -917,8 +928,8 @@
             const msgEl = document.getElementById('modal-message');
             const confirmBtn = document.getElementById('modal-confirm-btn');
             
-            if (titleEl) titleEl.innerText = title;
-            if (msgEl) msgEl.innerText = message;
+            if (titleEl) titleEl.textContent = title;
+            if (msgEl) msgEl.textContent = message;
             
             if (confirmBtn) {
                 confirmBtn.onclick = () => {
@@ -949,6 +960,7 @@
             populateForm();
             updateReportView();
             renderMediaGrid();
+            mostrarEcraInicial();
         });
 
         function loadStoredData() {
@@ -961,11 +973,11 @@
                         appData.fotos = Array(10).fill(null).map((_, i) => existing[i] || { url: "", desc: `Foto ${i + 1}` });
                     }
                 } else {
-                    appData = JSON.parse(JSON.stringify(SAMPLE_DATA));
+                    appData = relatorioVazio();
                 }
             } catch (e) {
                 console.error("Erro ao carregar dados guardados:", e);
-                appData = JSON.parse(JSON.stringify(SAMPLE_DATA));
+                appData = relatorioVazio();
             }
         }
 
@@ -1045,6 +1057,11 @@
                 }
             });
 
+            // A barra de passos só interessa quando há um relatório em mãos.
+            // Na lista da Folha1, sem nada aberto, fica escondida.
+            const nav = document.getElementById('tabs-nav');
+            if (nav) nav.classList.toggle('hidden', tabId === 'historico' && !temConteudo(appData));
+
             const activeEl = document.getElementById(`tab-${tabId}`);
             const activeBtn = document.getElementById(`btn-tab-${tabId}`);
             if (activeEl) activeEl.classList.remove('hidden');
@@ -1055,8 +1072,7 @@
 
             if (tabId === 'relatorio') {
                 updateReportView();
-            } else if (tabId === 'historico') {
-                }
+            }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1815,6 +1831,127 @@ tailwind.config = { theme: { extend: {
             const m = s.match(/\/d\/([\w-]+)/) || s.match(/[?&]id=([\w-]+)/);
             if (!m) return s;
             return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w' + (largura || 1600);
+        }
+
+        /* ================= ECRÃ INICIAL / RELATÓRIO NOVO ================= */
+
+        function relatorioVazio() {
+            const hoje = new Date().toISOString().slice(0, 10);
+            return {
+                id: "", data: hoje, cliente: "", clienteLogo: "", setor: "",
+                tecnico: "", maquina: "", serialNumber: "",
+                utensilios: [utensilioVazio()],
+                consideracoesPrevias: "", consideracoes: "", conclusao: "",
+                fotos: Array(10).fill(null).map((_, i) => ({ url: "", desc: "" })),
+                videoUrl: ""
+            };
+        }
+
+        function temConteudo(d) {
+            if (!d) return false;
+            const campos = [d.id, d.cliente, d.setor, d.tecnico, d.maquina, d.serialNumber,
+                            d.consideracoesPrevias, d.consideracoes, d.conclusao, d.videoUrl];
+            if (campos.some(v => String(v || '').trim() !== '')) return true;
+            if ((d.fotos || []).some(f => String(f.url || '').trim() !== '' || String(f.desc || '').trim() !== '')) return true;
+            return (d.utensilios || []).some(u => Object.keys(u).some(k => String(u[k] || '').trim() !== ''));
+        }
+
+        function mostrarEcraInicial() {
+            if (previewBackup) restorePreviewData();
+
+            ['tabs-nav', 'form-container', 'tab-relatorio'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            const acoes = document.getElementById('header-acoes');
+            if (acoes) { acoes.classList.add('hidden'); acoes.classList.remove('flex'); }
+            const inicio = document.getElementById('ecra-inicial');
+            if (inicio) inicio.classList.remove('hidden');
+
+            // Mostra o rascunho guardado, se houver algum com conteúdo
+            const aviso = document.getElementById('ecra-inicial-rascunho');
+            const etiqueta = document.getElementById('rascunho-id');
+            let rascunho = null;
+            try {
+                const guardado = localStorage.getItem('mw_wash_report_data');
+                if (guardado) rascunho = migrarUtensilios(JSON.parse(guardado));
+            } catch (e) { rascunho = null; }
+
+            if (aviso && rascunho && temConteudo(rascunho)) {
+                if (etiqueta) etiqueta.textContent = rascunho.id || rascunho.cliente || 'sem ID';
+                aviso.classList.remove('hidden');
+            } else if (aviso) {
+                aviso.classList.add('hidden');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function esconderEcraInicial() {
+            const inicio = document.getElementById('ecra-inicial');
+            if (inicio) inicio.classList.add('hidden');
+            const form = document.getElementById('form-container');
+            if (form) form.classList.remove('hidden');
+            const acoes = document.getElementById('header-acoes');
+            if (acoes) { acoes.classList.remove('hidden'); acoes.classList.add('flex'); }
+        }
+
+        // Ecrã inicial: criar um relatório do zero
+        function novoRelatorio() {
+            appData = relatorioVazio();
+            saveData();
+            populateForm();
+            renderMediaGrid();
+            updateReportView();
+            esconderEcraInicial();
+            switchTab('geral');
+            const campoId = document.getElementById('inp-id');
+            if (campoId) campoId.focus();
+        }
+
+        // Botão do cabeçalho: limpar tudo sem sair do formulário
+        function limparCampos() {
+            if (!temConteudo(appData)) { novoRelatorio(); showToast("Campos limpos."); return; }
+
+            openModal(
+                "Limpar todos os campos",
+                "Vai apagar tudo o que está no formulário e começar um relatório novo. Os relatórios já enviados para a Folha1 não são afetados. Continuar?",
+                () => {
+                    novoRelatorio();
+                    showToast("Campos limpos. Relatório novo.");
+                }
+            );
+        }
+
+        function abrirRelatorios() {
+            esconderEcraInicial();
+            switchTab('historico');
+        }
+
+        function descartarRascunho() {
+            openModal(
+                "Descartar relatório a meio",
+                "Vai apagar o relatório que ficou por terminar neste browser. Os relatórios já enviados para a Folha1 não são afetados. Continuar?",
+                () => {
+                    try { localStorage.removeItem('mw_wash_report_data'); } catch (e) { console.error(e); }
+                    appData = relatorioVazio();
+                    populateForm();
+                    renderMediaGrid();
+                    updateReportView();
+                    const aviso = document.getElementById('ecra-inicial-rascunho');
+                    if (aviso) aviso.classList.add('hidden');
+                    showToast("Relatório a meio descartado.");
+                }
+            );
+        }
+
+        function continuarRascunho() {
+            loadStoredData();
+            populateForm();
+            renderMediaGrid();
+            updateReportView();
+            esconderEcraInicial();
+            switchTab('geral');
         }
 
         function showToast(message) {
