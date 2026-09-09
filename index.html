@@ -372,7 +372,7 @@
                                 <span id="sheet-count" class="ml-2 px-1.5 py-0.5 bg-emerald-200 text-emerald-900 rounded-md text-[10px]">0</span>
                             </h3>
                             <p class="text-[11px] text-slate-500 mt-0.5">
-                                Os relatórios são lidos da Folha1 a cada atualização — é esta a base de dados.
+                                Os relatórios são lidos da Folha1 a cada atualização — é esta a base de dados. O <strong>idioma</strong> escolhe-se relatório a relatório e aplica-se a <strong>Abrir</strong>, <strong>Link</strong> e ao ficheiro descarregado.
                             </p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -392,11 +392,12 @@
                                     <th class="p-3">Equipamento</th>
                                     <th class="p-3">Técnico</th>
                                     <th class="p-3 text-center">Utens.</th>
+                                    <th class="p-3 text-center">Idioma</th>
                                     <th class="p-3 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="history-sheet-body" class="divide-y divide-slate-100">
-                                <tr><td colspan="7" class="p-6 text-center text-slate-400 italic">Clique em "Ler da Folha1" para ver a base de dados.</td></tr>
+                                <tr><td colspan="8" class="p-6 text-center text-slate-400 italic">Clique em "Ler da Folha1" para ver a base de dados.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -748,7 +749,7 @@
                             <div class="h-28 bg-slate-200 flex items-center justify-center overflow-hidden border-b border-slate-200 relative ${hasUrl ? 'cursor-zoom-in group' : ''}"
                                  ${hasUrl ? `onclick="openLightbox(${foto._i})" title="Clique para ver maior"` : ''}>
                                 ${hasUrl ?
-                                    `<img src="${urlImagem(foto.url, 800)}" class="w-full h-full object-cover" alt="Evidência ${foto._i + 1}" loading="lazy">
+                                    `<img src="${urlImagem(foto.url, 800)}" data-drive="${idDoDrive(foto.url)}" onerror="fotoPlanoB(this)" referrerpolicy="no-referrer" class="w-full h-full object-cover" alt="Evidência ${foto._i + 1}">
                                      <span class="no-print absolute bottom-1 right-1 w-6 h-6 bg-slate-900/70 text-white rounded-md flex items-center justify-center text-[10px] opacity-80 group-hover:opacity-100 transition">
                                         <i class="fa-solid fa-magnifying-glass-plus"></i>
                                      </span>` :
@@ -792,7 +793,7 @@
                     <div class="w-full h-28 bg-slate-200 rounded-lg overflow-hidden flex items-center justify-center border border-slate-300 relative ${hasUrl ? 'cursor-zoom-in group' : ''}"
                          ${hasUrl ? `onclick="openLightbox(${index})" title="Clique para ver maior"` : ''}>
                         ${hasUrl ? 
-                            `<img src="${urlImagem(foto.url, 600)}" class="w-full h-full object-cover" alt="Foto ${index + 1}" loading="lazy">
+                            `<img src="${urlImagem(foto.url, 600)}" data-drive="${idDoDrive(foto.url)}" onerror="fotoPlanoB(this)" referrerpolicy="no-referrer" class="w-full h-full object-cover" alt="Foto ${index + 1}" loading="lazy">
                              <span class="absolute bottom-1 right-1 w-6 h-6 bg-slate-900/70 text-white rounded-md flex items-center justify-center text-[10px] opacity-80 group-hover:opacity-100 transition">
                                 <i class="fa-solid fa-magnifying-glass-plus"></i>
                              </span>` : 
@@ -916,10 +917,32 @@
         }
 
         function printReport() {
-            readFormInputs();
-            saveData();
+            if (!previewBackup) {
+                readFormInputs();
+                saveData();
+            }
             updateReportView();
-            window.print();
+            imprimirQuandoFotosProntas();
+        }
+
+        // Imprimir com imagens em falta dá páginas com quadrados vazios:
+        // espera que todas carreguem (no máximo 8 segundos).
+        function imprimirQuandoFotosProntas() {
+            const imgs = Array.from(document.querySelectorAll('#rep-print-container img'));
+            const faltam = imgs.filter(i => !i.complete);
+
+            if (faltam.length === 0) { window.print(); return; }
+
+            showToast(`A carregar ${faltam.length} fotografia${faltam.length === 1 ? '' : 's'}...`);
+            let pendentes = faltam.length, feito = false;
+            const avancar = () => { if (!feito) { feito = true; window.print(); } };
+
+            faltam.forEach(i => {
+                const conta = () => { if (--pendentes <= 0) avancar(); };
+                i.addEventListener('load', conta, { once: true });
+                i.addEventListener('error', conta, { once: true });
+            });
+            setTimeout(avancar, 8000);
         }
 
         function openModal(title, message, onConfirm) {
@@ -1563,7 +1586,7 @@ tailwind.config = { theme: { extend: {
         }
 
         function linkPartilhavel(id) {
-            return urlWebApp() + '?id=' + encodeURIComponent(id);
+            return urlWebApp() + '?id=' + encodeURIComponent(id) + sufixoIdioma(id);
         }
 
         // Abre o relatório online (a versão que está no Google Sheet)
@@ -1574,7 +1597,7 @@ tailwind.config = { theme: { extend: {
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url)
-                    .then(() => showToast("Link aberto e copiado para a área de transferência."))
+                    .then(() => showToast(`Link (${NOME_IDIOMA[idiomaDe(id)]}) aberto e copiado.`))
                     .catch(() => showToast("Link aberto num separador novo."));
             } else {
                 showToast("Link aberto num separador novo.");
@@ -1604,7 +1627,7 @@ tailwind.config = { theme: { extend: {
         function carregarHistoricoSheet() {
             const tbody = document.getElementById('history-sheet-body');
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">
                     <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> A ler a Folha1...</td></tr>`;
             }
 
@@ -1619,7 +1642,7 @@ tailwind.config = { theme: { extend: {
                 .catch(err => {
                     console.error("Erro ao ler o Sheet:", err);
                     if (tbody) {
-                        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-rose-500 italic">
+                        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-rose-500 italic">
                             Não foi possível ler a Folha1. Confirme o URL do Web App e a implementação.</td></tr>`;
                     }
                     showToast("Erro ao ler o Google Sheet.");
@@ -1635,7 +1658,7 @@ tailwind.config = { theme: { extend: {
             if (contador) contador.textContent = listaSheet.length;
 
             if (listaSheet.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic">
                     Nenhum relatório na Folha1.</td></tr>`;
                 return;
             }
@@ -1654,7 +1677,12 @@ tailwind.config = { theme: { extend: {
                         <span class="px-1.5 py-0.5 bg-slate-100 rounded font-bold text-[11px]">${rep.utensilios}</span>
                         ${rep.fotos ? `<span class="ml-1 text-[10px] text-slate-400"><i class="fa-solid fa-camera"></i> ${rep.fotos}</span>` : ''}
                     </td>
-<td class="p-3 text-right space-x-1 whitespace-nowrap">${acoesSheet(safeId)}</td>
+<td class="p-3 text-center">
+                        <select onchange="definirIdioma('${safeId}', this.value)" class="text-[11px] font-bold text-slate-700 bg-white border border-slate-300 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer" title="Idioma deste relatório ao abrir, partilhar ou descarregar">
+                            ${opcoesIdioma(idiomaDe(rep.id))}
+                        </select>
+                    </td>
+                    <td class="p-3 text-right space-x-1 whitespace-nowrap">${acoesSheet(safeId)}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1734,42 +1762,40 @@ tailwind.config = { theme: { extend: {
             });
         }
 
+        // Abre a página do relatório servida pelo Apps Script, no idioma escolhido
         function abrirDoSheet(id) {
-            comRelatorio(id, rep => {
-                try {
-                    const blob = new Blob([gerarHtmlRelatorio(rep)], { type: 'text/html;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    if (!window.open(url, '_blank')) {
-                        showToast("O browser bloqueou a janela. Autorize pop-ups para este ficheiro.");
-                        return;
-                    }
-                    showToast(`Relatório '${rep.id}' aberto em novo separador.`);
-                    setTimeout(() => URL.revokeObjectURL(url), 120000);
-                } catch (e) {
-                    console.error(e);
-                    showToast("Não foi possível gerar o relatório.");
-                }
-            });
+            const url = urlWebApp() + '?id=' + encodeURIComponent(id) + sufixoIdioma(id);
+            if (!window.open(url, '_blank')) {
+                showToast("O browser bloqueou a janela. Autorize pop-ups.");
+                return;
+            }
+            showToast(`Relatório '${id}' aberto (${NOME_IDIOMA[idiomaDe(id)]}).`);
         }
 
+        // Descarrega o HTML gerado pelo Apps Script (já no idioma escolhido)
         function descarregarDoSheet(id) {
-            comRelatorio(id, rep => {
-                try {
-                    const blob = new Blob([gerarHtmlRelatorio(rep)], { type: 'text/html;charset=utf-8' });
+            showToast(`A preparar o ficheiro (${NOME_IDIOMA[idiomaDe(id)]})...`);
+
+            fetch(urlWebApp() + '?id=' + encodeURIComponent(id) + '&formato=ficheiro' + sufixoIdioma(id))
+                .then(r => r.text())
+                .then(html => {
+                    if (!html || html.indexOf('<!DOCTYPE') < 0) throw new Error('resposta inesperada');
+                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `Relatorio_${String(rep.id || 'MultiWasher').replace(/[^\w\-]/g, '_')}.html`;
+                    a.download = `Relatorio_${String(id).replace(/[^\w\-]/g, '_')}` +
+                                 (idiomaDe(id) ? '_' + idiomaDe(id).toUpperCase() : '') + '.html';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     setTimeout(() => URL.revokeObjectURL(url), 10000);
-                    showToast("Ficheiro HTML do relatório descarregado.");
-                } catch (e) {
-                    console.error(e);
+                    showToast("Ficheiro descarregado.");
+                })
+                .catch(err => {
+                    console.error("Erro ao descarregar:", err);
                     showToast("Não foi possível gerar o ficheiro.");
-                }
-            });
+                });
         }
 
         function carregarDoSheet(id) {
@@ -1824,6 +1850,21 @@ tailwind.config = { theme: { extend: {
 
         // O Drive dá links do tipo /file/d/ID/view, que são páginas, não imagens.
         // Para mostrar numa <img> é preciso o endereço de thumbnail.
+        function idDoDrive(url) {
+            const m = String(url || '').match(/\/d\/([\w-]+)/) || String(url || '').match(/[?&]id=([\w-]+)/);
+            return m ? m[1] : '';
+        }
+
+        // Se o thumbnail do Drive falhar, tenta outros endereços antes de desistir
+        function fotoPlanoB(img) {
+            const id = img.getAttribute('data-drive');
+            if (!id) return;
+            const n = Number(img.dataset.tentativa || 0) + 1;
+            img.dataset.tentativa = n;
+            if (n === 1) img.src = 'https://lh3.googleusercontent.com/d/' + id + '=w1600';
+            else if (n === 2) img.src = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w800';
+        }
+
         function urlImagem(url, largura) {
             const s = String(url || '');
             if (!s) return '';
@@ -1952,6 +1993,38 @@ tailwind.config = { theme: { extend: {
             updateReportView();
             esconderEcraInicial();
             switchTab('geral');
+        }
+
+        /* ================= IDIOMA, RELATÓRIO A RELATÓRIO ================= */
+
+        // "" = original (texto como foi escrito, etiquetas em português)
+        const NOME_IDIOMA = { '': 'Original', pt: 'Português', en: 'English', es: 'Español', fr: 'Français', de: 'Deutsch' };
+
+        // id do relatório -> idioma escolhido
+        let idiomaPorId = {};
+        try { idiomaPorId = JSON.parse(localStorage.getItem('mw_idioma_por_relatorio') || '{}'); } catch (e) { idiomaPorId = {}; }
+
+        function idiomaDe(id) {
+            return idiomaPorId[id] || '';
+        }
+
+        function definirIdioma(id, lang) {
+            if (lang) idiomaPorId[id] = lang; else delete idiomaPorId[id];
+            try { localStorage.setItem('mw_idioma_por_relatorio', JSON.stringify(idiomaPorId)); } catch (e) {}
+            showToast(lang
+                ? `'${id}' passa a sair em ${NOME_IDIOMA[lang]}.`
+                : `'${id}' passa a sair no texto original.`);
+        }
+
+        function opcoesIdioma(atual) {
+            return Object.keys(NOME_IDIOMA).map(k =>
+                `<option value="${k}" ${k === atual ? 'selected' : ''}>${k ? k.toUpperCase() : 'Orig.'}</option>`
+            ).join('');
+        }
+
+        function sufixoIdioma(id) {
+            const lang = idiomaDe(id);
+            return lang ? '&lang=' + lang : '';
         }
 
         function showToast(message) {
