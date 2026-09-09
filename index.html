@@ -786,6 +786,25 @@
         </div>
     </div>
 
+    <!-- PWA: botão de instalação (Android/desktop) -->
+    <button type="button" id="pwa-install-btn" onclick="pwaInstall()" class="hidden fixed bottom-5 left-5 z-50 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl border border-white/10 transition flex items-center gap-2">
+        <i class="fa-solid fa-download"></i> Instalar app
+    </button>
+
+    <!-- PWA: instruções de instalação no iOS -->
+    <div id="pwa-ios-hint" class="hidden fixed inset-x-4 bottom-5 z-50 mx-auto max-w-sm bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl border border-slate-700">
+        <div class="flex items-start gap-3">
+            <i class="fa-solid fa-arrow-up-from-bracket text-brand-300 mt-0.5"></i>
+            <p class="flex-1 leading-relaxed">
+                Para instalar: toque em <strong>Partilhar</strong> e depois em
+                <strong>"Adicionar ao ecrã principal"</strong>.
+            </p>
+            <button type="button" onclick="document.getElementById('pwa-ios-hint').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 border border-slate-700">
         <i class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -2247,6 +2266,61 @@ tailwind.config = { theme: { extend: {
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 3000);
         }
+    </script>
+
+    <!-- PWA: prompt de instalação -->
+    <script>
+        let deferredInstallPrompt = null;
+
+        function estaInstalada() {
+            return window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn && !estaInstalada()) btn.classList.remove('hidden');
+        });
+
+        async function pwaInstall() {
+            const btn = document.getElementById('pwa-install-btn');
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            if (btn) btn.classList.add('hidden');
+            if (outcome === 'accepted' && typeof showToast === 'function') {
+                showToast('Aplicação instalada.');
+            }
+        }
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            const btn = document.getElementById('pwa-install-btn');
+            if (btn) btn.classList.add('hidden');
+            if (typeof showToast === 'function') showToast('Aplicação instalada.');
+        });
+
+        // iOS/iPadOS não suporta beforeinstallprompt: mostrar instruções manuais
+        window.addEventListener('load', () => {
+            const ua = window.navigator.userAgent;
+            const isIOS = /iphone|ipad|ipod/i.test(ua)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isSafari = /^((?!chrome|crios|fxios|android).)*safari/i.test(ua);
+            if (isIOS && isSafari && !estaInstalada()) {
+                const jaVisto = (() => { try { return localStorage.getItem('mw_pwa_ios_hint') === '1'; } catch (e) { return false; } })();
+                if (!jaVisto) {
+                    const hint = document.getElementById('pwa-ios-hint');
+                    if (hint) {
+                        hint.classList.remove('hidden');
+                        try { localStorage.setItem('mw_pwa_ios_hint', '1'); } catch (e) {}
+                        setTimeout(() => hint.classList.add('hidden'), 12000);
+                    }
+                }
+            }
+        });
     </script>
 
     <!-- PWA: registo do Service Worker -->
