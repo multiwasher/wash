@@ -5,7 +5,7 @@
  *  - CDNs (Tailwind, Font Awesome, Google Fonts, Cloudinary): stale-while-revalidate
  * Ao publicar uma nova versão do app, incrementar APP_VERSION.
  */
-const APP_VERSION = 'v1';
+const APP_VERSION = 'v2';
 const PRECACHE = `mw-precache-${APP_VERSION}`;
 const RUNTIME = `mw-runtime-${APP_VERSION}`;
 
