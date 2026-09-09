@@ -37,6 +37,174 @@
     </script>
     
     <style>
+        :root {
+            --mw-ink: #020617;
+            --mw-panel: rgba(5, 18, 38, 0.88);
+            --mw-panel-soft: rgba(10, 31, 58, 0.74);
+            --mw-cyan: #22d3ee;
+            --mw-cyan-bright: #67e8f9;
+            --mw-muted: #a5b4c7;
+            --mw-line: rgba(34, 211, 238, 0.4);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at center, rgba(81, 184, 234, 1) 0%, rgba(0, 0, 0, 1) 100%) fixed !important;
+            color: #f8fafc;
+        }
+
+        header {
+            background: rgba(2, 6, 23, 0.9) !important;
+            border-bottom: 1px solid var(--mw-line);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28) !important;
+            backdrop-filter: blur(18px);
+        }
+
+        main { position: relative; }
+
+        #ecra-inicial h2,
+        #ecra-inicial h3,
+        #ecra-inicial p,
+        #form-container label,
+        #form-container h2,
+        #form-container h3,
+        #form-container h4,
+        #form-container p,
+        #tabs-nav,
+        #preview-banner,
+        #tab-historico th,
+        #tab-historico td {
+            color: #f8fafc;
+        }
+
+        #ecra-inicial .max-w-3xl > button,
+        #tabs-nav,
+        #form-container > div {
+            background: var(--mw-panel) !important;
+            border-color: var(--mw-line) !important;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24) !important;
+            backdrop-filter: blur(14px);
+        }
+
+        #ecra-inicial .max-w-3xl > button:hover {
+            box-shadow: 0 18px 45px rgba(8, 145, 178, 0.22) !important;
+            transform: translateY(-2px);
+        }
+
+        #ecra-inicial .text-slate-500,
+        #form-container .text-slate-500,
+        #form-container .text-slate-400,
+        #tabs-nav .text-slate-600,
+        #tab-historico .text-slate-600 {
+            color: var(--mw-muted) !important;
+        }
+
+        #tabs-nav button {
+            border: 1px solid transparent;
+        }
+
+        #tabs-nav button:hover,
+        #tabs-nav button.bg-brand-700 {
+            border-color: var(--mw-cyan) !important;
+        }
+
+        #form-container input,
+        #form-container select,
+        #form-container textarea,
+        #gs-modal input {
+            background: #fff !important;
+            color: #0f172a !important;
+            border: 0 !important;
+            box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.08), 0 0 0 0 rgba(34, 211, 238, 0);
+        }
+
+        #form-container input:focus,
+        #form-container select:focus,
+        #form-container textarea:focus,
+        #gs-modal input:focus {
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.22) !important;
+        }
+
+        #form-container input::placeholder,
+        #form-container textarea::placeholder {
+            color: #64748b;
+        }
+
+        #form-container .bg-slate-50:not(input):not(select):not(textarea),
+        #tab-historico .bg-emerald-50\/40 {
+            background: var(--mw-panel-soft) !important;
+            border-color: var(--mw-line) !important;
+        }
+
+        .bg-brand-700,
+        .bg-brand-600 {
+            background: linear-gradient(115deg, #2563eb 0%, #0891b2 55%, #22d3ee 100%) !important;
+            box-shadow: 0 8px 22px rgba(8, 145, 178, 0.24);
+        }
+
+        .bg-brand-700:hover,
+        .bg-brand-600:hover {
+            background: linear-gradient(115deg, #3b82f6 0%, #06b6d4 55%, #67e8f9 100%) !important;
+        }
+
+        #form-container button:not(.bg-brand-700):not(.bg-brand-600),
+        #header-acoes button {
+            border: 0 !important;
+        }
+
+        button {
+            border: 0 !important;
+        }
+
+        #ecra-inicial .max-w-3xl > button {
+            border: 2px solid var(--mw-line) !important;
+        }
+
+        #ecra-inicial .max-w-3xl > button:hover {
+            border-color: var(--mw-cyan-bright) !important;
+        }
+
+        #tab-historico table,
+        #tab-historico table thead tr,
+        #tab-historico table tbody tr {
+            background: rgba(3, 15, 31, 0.72) !important;
+        }
+
+        #tab-historico table thead tr {
+            color: var(--mw-cyan-bright) !important;
+            border-color: var(--mw-line) !important;
+        }
+
+        #tab-historico select {
+            border: 1px solid var(--mw-cyan) !important;
+            color: #0f172a !important;
+        }
+
+        #custom-modal > div,
+        #gs-modal > div {
+            background: #071426 !important;
+            border-color: var(--mw-line) !important;
+        }
+
+        #custom-modal h3,
+        #custom-modal p,
+        #gs-modal h3,
+        #gs-modal p,
+        #gs-modal label {
+            color: #f8fafc;
+        }
+
+        .text-brand-800,
+        .text-brand-700,
+        .text-brand-600 {
+            color: var(--mw-cyan-bright) !important;
+        }
+
+        @media (max-width: 640px) {
+            #ecra-inicial { padding-top: 2.5rem; }
+            #form-container > div { padding: 1rem; }
+        }
+
         /* Custom print optimizations */
         @media print {
             body {
@@ -69,10 +237,10 @@
     <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center space-x-3">
-                <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png" alt="Somengil Logo" class="h-10 w-auto object-contain bg-white/90 p-1 rounded-lg shadow-sm">
+                <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1780388699/somengil_logo_white_V2_hvewaq.png" alt="Somengil Logo" class="h-10 w-auto object-contain p-1 rounded-lg shadow-sm">
                 <div>
-                    <h1 class="font-extrabold text-lg tracking-tight leading-none text-white">MULTI WASHER</h1>
-                    <p class="text-[11px] text-slate-400 font-medium">Relatório Técnico de Ensaio de Lavagem</p>
+                    <h1 class="font-extrabold text-lg tracking-tight leading-none text-white">MULTIWASHER</h1>
+                    <p class="text-[11px] text-slate-400 font-medium">WASH REPORT</p>
                 </div>
             </div>
 
@@ -111,8 +279,8 @@
         <!-- ECRÃ INICIAL -->
         <div id="ecra-inicial" class="no-print py-10 sm:py-16">
             <div class="max-w-3xl mx-auto text-center mb-10">
-                <h2 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">Relatórios de Ensaio de Lavagem</h2>
-                <p class="text-sm text-slate-500 mt-2">O que quer fazer?</p>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">WASHLAB</h2>
+                <!--<p class="text-sm text-slate-500 mt-2">O que quer fazer?</p>-->
             </div>
 
             <div class="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -443,10 +611,10 @@
                         <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png" alt="Somengil" class="h-12 w-auto object-contain">
                         <div class="border-l-2 border-slate-200 pl-3.5">
                             <div class="flex items-center space-x-2">
-                                <span class="text-xl font-black tracking-tight text-brand-800">MULTI WASHER</span>
-                                <span class="bg-brand-100 text-brand-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Reporte Técnico</span>
+                                <span class="text-xl font-black tracking-tight text-brand-800">MULTIWASHER</span>
+                                <span class="bg-brand-100 text-brand-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">WASH REPORT</span>
                             </div>
-                            <h1 class="text-sm font-black text-slate-900 uppercase tracking-tight mt-0.5">RELATÓRIO DE ENSAIO DE LAVAGEM</h1>
+                            <h1 class="text-sm font-black text-slate-900 uppercase tracking-tight mt-0.5">WASH TEST REPORT</h1>
                         </div>
                     </div>
 
