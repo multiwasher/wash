@@ -539,7 +539,7 @@
                         <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider flex items-center">
                             <i class="fa-solid fa-folder-open mr-2"></i> Relatórios Realizados & Registados
                         </h2>
-                        <p class="text-xs text-slate-500 mt-0.5">Lista lida diretamente da Folha1. Cada relatório pode ser pré-visualizado, aberto, partilhado, descarregado, carregado para edição ou eliminado.</p>
+                        <p class="text-xs text-slate-500 mt-0.5"><!--Lista lida diretamente da Folha1. Cada relatório pode ser pré-visualizado, aberto, partilhado, descarregado, carregado para edição ou eliminado.--></p>
                     </div>
                 </div>
 
@@ -548,11 +548,11 @@
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
                         <div>
                             <h3 class="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center">
-                                <i class="fa-solid fa-database mr-2"></i> Relatórios na Folha1
+                                <i class="fa-solid fa-database mr-2"></i> Relatórios na BD
                                 <span id="sheet-count" class="ml-2 px-1.5 py-0.5 bg-emerald-200 text-emerald-900 rounded-md text-[10px]">0</span>
                             </h3>
                             <p class="text-[11px] text-slate-500 mt-0.5">
-                                Os relatórios são lidos da Folha1 a cada atualização — é esta a base de dados. O <strong>idioma</strong> escolhe-se relatório a relatório e aplica-se a <strong>Abrir</strong>, <strong>Link</strong> e ao ficheiro descarregado.
+                                <!--Os relatórios são lidos da Folha1 a cada atualização — é esta a base de dados. O <strong>idioma</strong> escolhe-se relatório a relatório e aplica-se ao <strong>Link</strong> e ao ficheiro descarregado.-->
                             </p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -1920,9 +1920,6 @@ tailwind.config = { theme: { extend: {
                 <button type="button" onclick="verDoSheet('${safeId}')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Pré-visualizar aqui, sem alterar o relatório em edição">
                     <i class="fa-solid fa-eye mr-1"></i> Ver
                 </button>
-                <button type="button" onclick="abrirDoSheet('${safeId}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Abrir num separador novo do browser">
-                    <i class="fa-solid fa-up-right-from-square mr-1"></i> Abrir
-                </button>
                 <button type="button" onclick="abrirLinkPartilhavel('${safeId}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Abrir e copiar o link partilhável">
                     <i class="fa-solid fa-link mr-1"></i> Link
                 </button>
@@ -1930,7 +1927,7 @@ tailwind.config = { theme: { extend: {
                     <i class="fa-solid fa-download"></i>
                 </button>
                 <button type="button" onclick="carregarDoSheet('${safeId}')" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Carregar no formulário para editar">
-                    <i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Carregar
+                    <i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Editar
                 </button>
                 <button type="button" onclick="apagarDoSheet('${safeId}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] rounded-lg border border-rose-200 transition" title="Eliminar este relatório da Folha1">
                     <i class="fa-solid fa-trash-can"></i>
@@ -1986,16 +1983,6 @@ tailwind.config = { theme: { extend: {
                 switchTab('relatorio');
                 showToast(`Pré-visualização de '${rep.id}'.`);
             });
-        }
-
-        // Abre a página do relatório servida pelo Apps Script, no idioma escolhido
-        function abrirDoSheet(id) {
-            const url = urlWebApp() + '?id=' + encodeURIComponent(id) + sufixoIdioma(id);
-            if (!window.open(url, '_blank')) {
-                showToast("O browser bloqueou a janela. Autorize pop-ups.");
-                return;
-            }
-            showToast(`Relatório '${id}' aberto (${NOME_IDIOMA[idiomaDe(id)]}).`);
         }
 
         // Descarrega o HTML gerado pelo Apps Script (já no idioma escolhido)
