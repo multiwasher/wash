@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Relatórios MultiWasher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            200: '#bae0fd',
+                            300: '#7cc8fc',
+                            400: '#36aff8',
+                            500: '#0c94eb',
+                            600: '#0076c9',
+                            700: '#025ea7',
+                            800: '#06508a',
+                            900: '#0b4372',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom print optimizations */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen pb-12 antialiased">
+
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png" alt="Somengil Logo" class="h-10 w-auto object-contain bg-white/90 p-1 rounded-lg shadow-sm">
+                <div>
+                    <h1 class="font-extrabold text-lg tracking-tight leading-none text-white">MULTI WASHER</h1>
+                    <p class="text-[11px] text-slate-400 font-medium">Relatório Técnico de Ensaio de Lavagem</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="switchTab('historico')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center" title="Ver lista de relatórios realizados">
+                    <i class="fa-solid fa-folder-open mr-1.5"></i> Relatórios Realizados
+                </button>
+                <button type="button" onclick="sendToGoogleSheets()" class="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center">
+                    <i class="fa-solid fa-file-excel mr-1.5"></i> Enviar p/ Google Sheet
+                </button>
+                <button type="button" onclick="printReport()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center">
+                    <i class="fa-solid fa-print mr-1.5"></i> Imprimir / Salvar PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-1.5 mb-6 no-print overflow-x-auto">
+            <div class="flex items-center min-w-max space-x-1">
+                <button id="btn-tab-geral" onclick="switchTab('geral')" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center bg-brand-700 text-white shadow">
+                    <i class="fa-solid fa-circle-info mr-2"></i> 1. Geral
+                </button>
+                <button id="btn-tab-utensilios" onclick="switchTab('utensilios')" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center">
+                    <i class="fa-solid fa-boxes-stacked mr-2"></i> 2. Utensílios <span id="tab-utensilios-badge" class="ml-1.5 px-1.5 py-0.5 bg-brand-100 text-brand-800 rounded-md text-[10px]">1</span>
+                </button>
+                <button id="btn-tab-midia" onclick="switchTab('midia')" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center">
+                    <i class="fa-solid fa-camera mr-2"></i> 3. Fotos & Vídeo
+                </button>
+                <button id="btn-tab-consideracoes" onclick="switchTab('consideracoes')" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center">
+                    <i class="fa-solid fa-clipboard-check mr-2"></i> 4. Conclusões
+                </button>
+                <button id="btn-tab-relatorio" onclick="switchTab('relatorio')" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center">
+                    <i class="fa-solid fa-file-contract mr-2"></i> 5. Visualizar Relatório
+                </button>
+                <button id="btn-tab-historico" onclick="switchTab('historico')" class="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-100 transition flex items-center">
+                    <i class="fa-solid fa-folder-open mr-2"></i> 6. Relatórios Realizados
+                </button>
+            </div>
+        </div>
+
+        <!-- FORM TABS CONTAINER (no-print) -->
+        <div id="form-container" class="no-print">
+            
+            <div id="tab-geral" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider border-b border-slate-200 pb-2">
+                    <i class="fa-solid fa-sliders mr-2"></i> Informação Geral do Ensaio
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">ID DO RELATÓRIO *</label>
+                        <input type="text" id="inp-id" oninput="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: MW-ARCOR-2026-01">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">DATA DO ENSAIO *</label>
+                        <input type="date" id="inp-data" oninput="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">NOME DO CLIENTE *</label>
+                        <input type="text" id="inp-cliente" oninput="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: ARCOR - Grupo Alimentar">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">LOGÓTIPO DO CLIENTE</label>
+                        <div class="flex items-center space-x-3 bg-slate-50 border border-slate-300 p-2 rounded-xl">
+                            <div id="logo-preview-container" class="w-16 h-10 bg-slate-200 rounded-lg flex items-center justify-center overflow-hidden border border-slate-300 shrink-0">
+                                <i id="logo-placeholder-icon" class="fa-solid fa-building text-slate-400 text-sm"></i>
+                                <img id="logo-preview-img" class="w-full h-full object-contain hidden" alt="Logo Cliente">
+                            </div>
+                            <div class="flex-1 flex flex-wrap gap-2 items-center">
+                                <label class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg cursor-pointer transition shadow-sm inline-flex items-center">
+                                    <i class="fa-solid fa-upload mr-1.5"></i> Carregar Logo
+                                    <input type="file" id="inp-cliente-logo" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                                </label>
+                                <button type="button" id="btn-remove-logo" onclick="removeLogo()" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg border border-rose-200 hidden transition">
+                                    <i class="fa-solid fa-trash-can mr-1"></i> Remover
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">SETOR / INDÚSTRIA</label>
+                        <select id="inp-setor" onchange="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="">Selecione o Setor...</option>
+                            <option value="Carnes">Carnes</option>
+                            <option value="Peixes">Peixes</option>
+                            <option value="Lacticínios">Lacticínios</option>
+                            <option value="Padaria & Pastelaria">Padaria & Pastelaria</option>
+                            <option value="Catering">Catering</option>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Cosméticos">Cosméticos</option>
+                            <option value="Farmacêutica">Farmacêutica</option>
+                            <option value="Airline Catering">Airline Catering</option>
+                            <option value="Hospitals">Hospitals</option>
+                            <option value="Laundry">Laundry</option>
+                            <option value="Retalho">Retalho</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">TÉCNICO RESPONSÁVEL</label>
+                        <input type="text" id="inp-tecnico" oninput="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: Alexandre Neves">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">MODELO DA MÁQUINA</label>
+                        <input type="text" id="inp-maquina" oninput="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: MultiWasher MW-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">NÚMERO DE SÉRIE</label>
+                        <input type="text" id="inp-serial" oninput="saveAndRefresh()" class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: MW-2026-8891">
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-end">
+                    <button type="button" onclick="switchTab('utensilios')" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center">
+                        Avançar para Utensílios <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-utensilios" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-2">
+                    <div>
+                        <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider">
+                            <i class="fa-solid fa-boxes-stacked mr-2"></i> Utensílios: Especificação & Programa de Lavagem
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Cada utensílio é gravado numa <strong>linha própria</strong> no Google Sheet, com os dados do ensaio repetidos.
+                        </p>
+                    </div>
+                    <button type="button" onclick="addUtensilio()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center shrink-0">
+                        <i class="fa-solid fa-plus mr-1.5"></i> Adicionar Utensílio
+                    </button>
+                </div>
+
+                <div id="utensilios-container" class="space-y-4">
+                    <!-- Cartões de utensílio gerados via JS -->
+                </div>
+
+                <div class="pt-3 flex justify-between">
+                    <button type="button" onclick="switchTab('geral')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
+                    </button>
+                    <button type="button" onclick="switchTab('midia')" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center">
+                        Avançar para Fotos & Vídeo <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-midia" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 hidden">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider">
+                        <i class="fa-solid fa-camera mr-2"></i> Galeria de Evidências Fotográficas & Vídeo
+                    </h2>
+                    <button type="button" onclick="addPhoto()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center">
+                        <i class="fa-solid fa-plus mr-1.5"></i> Adicionar Foto
+                    </button>
+                </div>
+                
+                <p class="text-xs text-slate-500">Adicione as fotografias do ensaio com a respetiva legenda descritiva. Pode adicionar quantas fotografias forem necessárias.</p>
+
+                <!-- Dynamic Photos Grid -->
+                <div id="media-photos-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+
+                <!-- Video Section -->
+                <div id="media-video-container" class="pt-4 border-t border-slate-200">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+
+                <div class="pt-3 flex justify-between">
+                    <button type="button" onclick="switchTab('utensilios')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
+                    </button>
+                    <button type="button" onclick="switchTab('consideracoes')" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl shadow transition flex items-center">
+                        Avançar para Conclusões <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-consideracoes" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 hidden">
+                <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider border-b border-slate-200 pb-2">
+                    <i class="fa-solid fa-clipboard-check mr-2"></i> Considerações Técnicas & Conclusão
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">CONSIDERAÇÕES PRÉVIAS AO ENSAIO</label>
+                        <textarea id="inp-consideracoes-previas" oninput="saveAndRefresh()" rows="3" class="w-full p-3 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: Estado dos utensílios antes do teste, temperatura ambiente, grau de secagem da sujidade..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">CONSIDERAÇÕES DURANTE / PÓS ENSAIO</label>
+                        <textarea id="inp-consideracoes" oninput="saveAndRefresh()" rows="3" class="w-full p-3 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: Desempenho do detergente, drenagem de água, nível de ruído, eficiência do enxaguamento..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">CONCLUSÃO E AVALIAÇÃO FINAL *</label>
+                        <textarea id="inp-conclusao" oninput="saveAndRefresh()" rows="3" class="w-full p-3 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: Processo de lavagem APROVADO. Remoção de 100% da sujidade sem danos nos utensílios."></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex justify-between">
+                    <button type="button" onclick="switchTab('midia')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
+                    </button>
+                    <button type="button" onclick="switchTab('relatorio')" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center">
+                        <i class="fa-solid fa-file-contract mr-2"></i> Gerar Relatório Final
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 7: Relatórios Realizados -->
+            <div id="tab-historico" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 hidden">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                    <div>
+                        <h2 class="text-sm font-black text-brand-800 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-folder-open mr-2"></i> Relatórios Realizados & Registados
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Lista lida diretamente da Folha1. Cada relatório pode ser pré-visualizado, aberto, partilhado, descarregado, carregado para edição ou eliminado.</p>
+                    </div>
+                </div>
+
+                <!-- BASE DE DADOS (Google Sheet) -->
+                <div class="border border-emerald-200 bg-emerald-50/40 rounded-2xl p-4">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center">
+                                <i class="fa-solid fa-database mr-2"></i> Relatórios na Folha1
+                                <span id="sheet-count" class="ml-2 px-1.5 py-0.5 bg-emerald-200 text-emerald-900 rounded-md text-[10px]">0</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                Os relatórios são lidos da Folha1 a cada atualização — é esta a base de dados.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="carregarHistoricoSheet()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition flex items-center">
+                                <i class="fa-solid fa-rotate mr-1.5"></i> Ler da Folha1
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse bg-white rounded-xl overflow-hidden">
+                            <thead>
+                                <tr class="bg-emerald-100/70 text-emerald-900 font-bold border-b border-emerald-200">
+                                    <th class="p-3">ID Relatório</th>
+                                    <th class="p-3">Data</th>
+                                    <th class="p-3">Cliente</th>
+                                    <th class="p-3">Equipamento</th>
+                                    <th class="p-3">Técnico</th>
+                                    <th class="p-3 text-center">Utens.</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-sheet-body" class="divide-y divide-slate-100">
+                                <tr><td colspan="7" class="p-6 text-center text-slate-400 italic">Clique em "Ler da Folha1" para ver a base de dados.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div id="tab-relatorio" class="hidden">
+
+            <!-- Banner de pré-visualização de relatório do histórico -->
+            <div id="preview-banner" class="hidden no-print mb-4 bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start space-x-2.5">
+                    <i class="fa-solid fa-eye text-amber-600 mt-0.5"></i>
+                    <div>
+                        <p class="text-xs font-black text-amber-900 uppercase tracking-wide">Modo pré-visualização</p>
+                        <p class="text-[11px] text-amber-800 leading-relaxed">
+                            A ver o relatório <span id="preview-banner-id" class="font-bold"></span> do histórico.
+                            O relatório em edição não foi alterado.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="abrirPreviewEmNovaAba()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold rounded-lg shadow-sm transition flex items-center">
+                        <i class="fa-solid fa-up-right-from-square mr-1.5"></i> Abrir em separador
+                    </button>
+                    <button type="button" onclick="loadPreviewIntoForm()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition flex items-center">
+                        <i class="fa-solid fa-pen-to-square mr-1.5"></i> Editar este relatório
+                    </button>
+                    <button type="button" onclick="exitPreview()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-300 transition flex items-center">
+                        <i class="fa-solid fa-arrow-left mr-1.5"></i> Voltar ao histórico
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable document -->
+            <div id="rep-print-container" class="bg-white border border-slate-300 rounded-2xl shadow-xl p-6 sm:p-10 print-container text-slate-800">
+                
+                <!-- Report Header -->
+                <div class="flex items-center justify-between border-b-2 border-brand-800 pb-4 mb-6">
+                    <div class="flex items-center space-x-4">
+                        <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png" alt="Somengil" class="h-12 w-auto object-contain">
+                        <div class="border-l-2 border-slate-200 pl-3.5">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xl font-black tracking-tight text-brand-800">MULTI WASHER</span>
+                                <span class="bg-brand-100 text-brand-800 text-[10px] font-black px-2 py-0.5 rounded uppercase">Reporte Técnico</span>
+                            </div>
+                            <h1 class="text-sm font-black text-slate-900 uppercase tracking-tight mt-0.5">RELATÓRIO DE ENSAIO DE LAVAGEM</h1>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <div id="rep-cliente-logo-wrapper" class="hidden max-h-14 max-w-[140px] items-center justify-center">
+                            <img id="rep-cliente-logo" class="max-h-14 max-w-[140px] object-contain" alt="Logo Cliente">
+                        </div>
+                        <div class="text-right text-[11px] leading-tight border-l border-slate-200 pl-3">
+                            <p class="font-bold text-slate-900">ID: <span id="rep-id" class="text-brand-700 font-mono"></span></p>
+                            <p class="text-slate-500">Data: <span id="rep-data" class="font-semibold text-slate-800"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-6 text-xs">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Cliente</span>
+                        <span id="rep-cliente" class="font-bold text-slate-900"></span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Setor / Indústria</span>
+                        <span id="rep-setor" class="font-semibold text-slate-800"></span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Técnico Resp.</span>
+                        <span id="rep-tecnico" class="font-semibold text-slate-800"></span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Equipamento</span>
+                        <span id="rep-maquina" class="font-bold text-brand-800"></span>
+                        <span id="rep-serial" class="text-[10px] text-slate-500 block"></span>
+                    </div>
+                </div>
+
+                <!-- Sections: Utensílios (geradas via JS) -->
+                <div id="rep-utensilios" class="space-y-6 mb-6"></div>
+
+                <!-- Section: Considerações & Conclusão -->
+                <div class="mb-6 space-y-3 text-xs">
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                        <h4 class="font-bold text-slate-800 uppercase text-[10px] mb-1">Considerações Prévias ao Ensaio</h4>
+                        <p id="rep-consideracoes-previas" class="text-slate-700 whitespace-pre-wrap"></p>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                        <h4 class="font-bold text-slate-800 uppercase text-[10px] mb-1">Considerações Práticas / Observações</h4>
+                        <p id="rep-consideracoes" class="text-slate-700 whitespace-pre-wrap"></p>
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-lg text-emerald-900">
+                        <h4 class="font-black text-emerald-800 uppercase text-[11px] mb-1">Conclusão do Ensaio</h4>
+                        <p id="rep-conclusao" class="font-medium whitespace-pre-wrap"></p>
+                    </div>
+                </div>
+
+                <!-- Page Break for Photos in Print -->
+                <div class="page-break pt-4"></div>
+
+                <!-- Section: Photos Grid -->
+                <div class="mb-4">
+                    <h3 class="text-xs font-extrabold bg-slate-800 text-white px-3 py-1.5 rounded-t-lg tracking-wide uppercase mb-3">
+                        Evidências Fotográficas
+                    </h3>
+                    <div id="rep-photos-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <!-- Dynamic Report Photos -->
+                    </div>
+                </div>
+
+                <!-- Report Footer -->
+                <div class="mt-8 pt-4 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500">
+                    <p>Documento gerado automaticamente pelo sistema MultiWasher Report Generator.</p>
+                    <p class="font-bold text-slate-700">MultiWasher &copy; 2026</p>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Custom Confirmation Modal (Replaces native confirm()) -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center space-x-3 text-rose-600">
+                <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <h3 id="modal-title" class="font-bold text-slate-900 text-base">Confirmação</h3>
+            </div>
+            <p id="modal-message" class="text-xs text-slate-600 leading-relaxed"></p>
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                    Cancelar
+                </button>
+                <button type="button" id="modal-confirm-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow transition">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Sheet Web App URL Modal -->
+    <div id="gs-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center space-x-3 text-emerald-700">
+                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-table text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Google Sheets Web App URL</h3>
+                    <p class="text-[11px] text-slate-500">Cole o URL da Aplicação Web do Apps Script</p>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">URL DE IMPLANTAÇÃO (WEB APP URL)</label>
+                <input type="text" id="inp-gs-url" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500" placeholder="https://script.google.com/macros/s/.../exec">
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button type="button" onclick="closeGsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveGsUrlAndSend()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition">
+                    Guardar e Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox de Evidências Fotográficas -->
+    <div id="lightbox" class="hidden no-print fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[60] items-center justify-center p-4" onclick="closeLightbox(event)">
+        <div class="relative w-full max-w-5xl" onclick="event.stopPropagation()">
+
+            <div class="flex items-center justify-between mb-2 gap-2">
+                <p id="lightbox-counter" class="text-[11px] font-black text-white/80 uppercase tracking-wider"></p>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="openPhotoInNewTab()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/20 transition flex items-center">
+                        <i class="fa-solid fa-up-right-from-square mr-1.5"></i> Abrir em nova janela
+                    </button>
+                    <button type="button" onclick="closeLightbox()" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/20 transition flex items-center">
+                        <i class="fa-solid fa-xmark mr-1.5"></i> Fechar
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-black/40 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center">
+                <img id="lightbox-img" src="" alt="Evidência fotográfica" class="max-h-[74vh] w-auto max-w-full object-contain">
+            </div>
+
+            <p id="lightbox-caption" class="text-center text-xs text-slate-200 font-medium mt-3 px-8"></p>
+
+            <button type="button" id="lightbox-prev" onclick="lightboxNav(-1)" class="absolute left-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full border border-white/20 transition flex items-center justify-center" title="Anterior">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button type="button" id="lightbox-next" onclick="lightboxNav(1)" class="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full border border-white/20 transition flex items-center justify-center" title="Seguinte">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 border border-slate-700">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-msg">Mensagem guardada</span>
+    </div>
+
+    <script>
+        const DEFAULT_GS_URL = "https://script.google.com/macros/s/AKfycbwSSJKMzAKUtRsHMsjsT3SooM5KtyWbG6je5rWIR57IG7XjAzIc_VFs6-mOgqQdHdxIXw/exec";
+
+        // Sample Initial Fill Data
+        const SAMPLE_DATA = {
+            id: "MW-ARCOR-2026-01",
+            data: "2026-09-08",
+            cliente: "ARCOR - Grupo Alimentar",
+            clienteLogo: "",
+            setor: "Padaria & Pastelaria",
+            tecnico: "Alexandre Neves",
+            maquina: "MultiWasher MW-300",
+            serialNumber: "MW-2026-8891",
+
+            // Utensílios (lista dinâmica — começa com 1)
+            utensilios: [
+                {
+                    tipo: "Tabuleiros lisos",
+                    material: "Alumínio",
+                    sujidade: "Carbonizado Padaria",
+                    objetivo: "Descarbonização",
+                    vaporIni: "3 min @ 100°C",
+                    lavagem: "10 min @ 65°C (Detergente Alcalino 1.5%)",
+                    centrifInter: "2 min (1200 RPM)",
+                    enxague: "5 min @ 80°C (Água Desmineralizada)",
+                    centrifFin: "3 min (1500 RPM)",
+                    vaporFin: "2 min (Esterilização Termossensível)"
+                }
+            ],
+
+            // Fotos 1 a 10
+            fotos: [
+                { url: "", desc: "Superfície antes da lavagem" },
+                { url: "", desc: "Superfície após enxaguamento final" },
+                { url: "", desc: "Detalhe do canto da bandeja" },
+                { url: "", desc: "Verificação de acúmulo de gordura" },
+                { url: "", desc: "Inspeção pós-secagem" },
+                { url: "", desc: "Molde - Pré" },
+                { url: "", desc: "Molde - Pós" },
+                { url: "", desc: "Zona crítica de vedação" },
+                { url: "", desc: "Amostragem de swab ATP" },
+                { url: "", desc: "Visão geral da câmara de lavagem" }
+            ],
+            videoUrl: "",
+
+            // Considerações & Conclusão
+            consideracoesPrevias: "Superfície dos utensílios apresentava incrustação acentuada antes do ensaio.",
+            consideracoes: "O ciclo de enxaguamento reduziu significativamente a condutividade da água residual.",
+            conclusao: "Processo de lavagem APROVADO. Desempenho excelente com remoção completa dos resíduos."
+        };
+
+        // Current App State
+        let appData = {};
+
+        // Safe DOM Helpers
+        function setVal(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.value = value !== undefined && value !== null ? value : '';
+        }
+
+        function getVal(id) {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        }
+
+        function setText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text !== undefined && text !== null && text !== '' ? text : '—';
+        }
+
+        function populateForm() {
+            setVal('inp-id', appData.id);
+            setVal('inp-data', appData.data);
+            setVal('inp-cliente', appData.cliente);
+            setVal('inp-setor', appData.setor);
+            setVal('inp-tecnico', appData.tecnico);
+            setVal('inp-maquina', appData.maquina);
+            setVal('inp-serial', appData.serialNumber);
+
+            // Client logo preview
+            const imgPreview = document.getElementById('logo-preview-img');
+            const iconPlaceholder = document.getElementById('logo-placeholder-icon');
+            const btnRemove = document.getElementById('btn-remove-logo');
+            if (imgPreview && iconPlaceholder && btnRemove) {
+                if (appData.clienteLogo && appData.clienteLogo.trim() !== '') {
+                    imgPreview.src = urlImagem(appData.clienteLogo, 400);
+                    imgPreview.classList.remove('hidden');
+                    iconPlaceholder.classList.add('hidden');
+                    btnRemove.classList.remove('hidden');
+                } else {
+                    imgPreview.classList.add('hidden');
+                    iconPlaceholder.classList.remove('hidden');
+                    btnRemove.classList.add('hidden');
+                }
+            }
+
+            // Utensílios (cartões dinâmicos)
+            renderUtensilios();
+
+            // Considerações
+            setVal('inp-consideracoes-previas', appData.consideracoesPrevias);
+            setVal('inp-consideracoes', appData.consideracoes);
+            setVal('inp-conclusao', appData.conclusao);
+        }
+
+        function readFormInputs() {
+            appData.id = getVal('inp-id');
+            appData.data = getVal('inp-data');
+            appData.cliente = getVal('inp-cliente');
+            appData.setor = getVal('inp-setor');
+            appData.tecnico = getVal('inp-tecnico');
+            appData.maquina = getVal('inp-maquina');
+            appData.serialNumber = getVal('inp-serial');
+
+            // Os utensílios são atualizados em direto por updateUtensilio()
+
+            appData.consideracoesPrevias = getVal('inp-consideracoes-previas');
+            appData.consideracoes = getVal('inp-consideracoes');
+            appData.conclusao = getVal('inp-conclusao');
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('mw_wash_report_data', JSON.stringify(appData));
+            } catch (e) {
+                console.warn("Quota excedida no localStorage:", e);
+            }
+        }
+
+        function saveAndRefresh() {
+            readFormInputs();
+            saveData();
+            updateReportView();
+        }
+
+        function updateReportView() {
+            setText('rep-id', appData.id);
+            setText('rep-data', appData.data);
+            setText('rep-cliente', appData.cliente);
+            setText('rep-setor', appData.setor);
+            setText('rep-tecnico', appData.tecnico);
+            setText('rep-maquina', appData.maquina);
+            setText('rep-serial', appData.serialNumber ? `S/N: ${appData.serialNumber}` : '');
+
+            // Logo
+            const logoImg = document.getElementById('rep-cliente-logo');
+            const logoWrapper = document.getElementById('rep-cliente-logo-wrapper');
+            if (logoImg && logoWrapper) {
+                if (appData.clienteLogo && appData.clienteLogo.trim() !== '') {
+                    logoImg.src = urlImagem(appData.clienteLogo, 600);
+                    logoWrapper.classList.remove('hidden');
+                    logoWrapper.classList.add('flex');
+                } else {
+                    logoWrapper.classList.add('hidden');
+                    logoWrapper.classList.remove('flex');
+                }
+            }
+
+            // Utensílios
+            renderReportUtensilios();
+
+            // Considerações
+            setText('rep-consideracoes-previas', appData.consideracoesPrevias);
+            setText('rep-consideracoes', appData.consideracoes);
+            setText('rep-conclusao', appData.conclusao);
+
+            // Report Photos Grid
+            const repGrid = document.getElementById('rep-photos-grid');
+            if (repGrid) {
+                repGrid.innerHTML = '';
+                const allPhotos = (appData.fotos || []).map((f, idx) => ({ url: f.url, desc: f.desc, _i: idx }));
+                const validPhotos = allPhotos.filter(f => (f.url && f.url.trim() !== '') || (f.desc && f.desc.trim() !== ''));
+
+                if (validPhotos.length === 0) {
+                    repGrid.innerHTML = `<div class="col-span-full text-center text-slate-400 py-4 text-xs italic">Nenhuma fotografia de evidência anexada.</div>`;
+                } else {
+                    validPhotos.forEach((foto) => {
+                        const item = document.createElement('div');
+                        item.className = "border border-slate-200 rounded-lg overflow-hidden bg-slate-50 flex flex-col";
+                        const hasUrl = foto.url && foto.url.trim() !== '';
+                        item.innerHTML = `
+                            <div class="h-28 bg-slate-200 flex items-center justify-center overflow-hidden border-b border-slate-200 relative ${hasUrl ? 'cursor-zoom-in group' : ''}"
+                                 ${hasUrl ? `onclick="openLightbox(${foto._i})" title="Clique para ver maior"` : ''}>
+                                ${hasUrl ?
+                                    `<img src="${urlImagem(foto.url, 800)}" class="w-full h-full object-cover" alt="Evidência ${foto._i + 1}" loading="lazy">
+                                     <span class="no-print absolute bottom-1 right-1 w-6 h-6 bg-slate-900/70 text-white rounded-md flex items-center justify-center text-[10px] opacity-80 group-hover:opacity-100 transition">
+                                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                     </span>` :
+                                    `<i class="fa-solid fa-image text-slate-400 text-2xl"></i>`
+                                }
+                            </div>
+                            <div class="p-1.5 text-[10px] text-slate-700 font-medium leading-tight text-center">
+                                ${foto.desc || `Fotografia ${foto._i + 1}`}
+                                ${hasUrl ? `<button type="button" onclick="openLightbox(${foto._i})" class="no-print block mx-auto mt-1 text-[10px] font-bold text-brand-600 hover:text-brand-800 underline">Ver maior</button>` : ''}
+                            </div>
+                        `;
+                        repGrid.appendChild(item);
+                    });
+                }
+            }
+        }
+
+        function renderMediaGrid() {
+            const grid = document.getElementById('media-photos-container');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            if (!appData.fotos || !Array.isArray(appData.fotos)) {
+                appData.fotos = [];
+            }
+            
+            appData.fotos.forEach((foto, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col space-y-2 relative group";
+                
+                const hasUrl = foto.url && foto.url.trim() !== '';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-500">
+                        <span>Foto ${index + 1}</span>
+                        <button type="button" onclick="removePhoto(${index})" class="text-rose-500 hover:text-rose-700 p-1" title="Eliminar Foto">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="w-full h-28 bg-slate-200 rounded-lg overflow-hidden flex items-center justify-center border border-slate-300 relative ${hasUrl ? 'cursor-zoom-in group' : ''}"
+                         ${hasUrl ? `onclick="openLightbox(${index})" title="Clique para ver maior"` : ''}>
+                        ${hasUrl ? 
+                            `<img src="${urlImagem(foto.url, 600)}" class="w-full h-full object-cover" alt="Foto ${index + 1}" loading="lazy">
+                             <span class="absolute bottom-1 right-1 w-6 h-6 bg-slate-900/70 text-white rounded-md flex items-center justify-center text-[10px] opacity-80 group-hover:opacity-100 transition">
+                                <i class="fa-solid fa-magnifying-glass-plus"></i>
+                             </span>` : 
+                            `<div class="text-center p-2">
+                                <i class="fa-solid fa-camera text-slate-400 text-xl mb-0.5"></i>
+                                <p class="text-[10px] text-slate-400 font-medium">Sem imagem</p>
+                             </div>`
+                        }
+                    </div>
+                    
+                    <div class="flex items-center gap-1">
+                        <label class="flex-1 py-1 px-2 bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-bold rounded-lg text-center cursor-pointer transition">
+                            <i class="fa-solid fa-upload mr-1"></i> ${hasUrl ? 'Alterar' : 'Carregar'}
+                            <input type="file" accept="image/*" class="hidden" onchange="handlePhotoUpload(${index}, event)">
+                        </label>
+                        ${hasUrl ? `
+                            <button type="button" onclick="clearPhotoUrl(${index})" class="py-1 px-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-[10px] font-bold rounded-lg transition" title="Remover Imagem">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Legenda / Descrição</label>
+                        <input type="text" value="${foto.desc || ''}" oninput="updatePhotoDesc(${index}, this.value)" class="w-full px-2 py-1 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Ex: Antes da lavagem">
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            const videoContainer = document.getElementById('media-video-container');
+            if (videoContainer) {
+                videoContainer.innerHTML = `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                        <label class="block text-xs font-bold text-slate-700">
+                            <i class="fa-solid fa-video mr-1 text-brand-600"></i> LINK DO VÍDEO DO ENSAIO (YouTube / Vimeo / Cloud Drive)
+                        </label>
+                        <input type="url" value="${appData.videoUrl || ''}" oninput="updateVideoUrl(this.value)" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                `;
+            }
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                appData.clienteLogo = e.target.result;
+                populateForm();
+                saveAndRefresh();
+                showToast("Logótipo do cliente carregado.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeLogo() {
+            appData.clienteLogo = "";
+            const fileInput = document.getElementById('inp-cliente-logo');
+            if (fileInput) fileInput.value = "";
+            populateForm();
+            saveAndRefresh();
+            showToast("Logótipo removido.");
+        }
+
+        function addPhoto() {
+            if (!appData.fotos) appData.fotos = [];
+            appData.fotos.push({ url: "", desc: `Foto ${appData.fotos.length + 1}` });
+            saveData();
+            renderMediaGrid();
+            updateReportView();
+            showToast("Nova fotografia adicionada.");
+        }
+
+        function removePhoto(index) {
+            if (!appData.fotos) return;
+            appData.fotos.splice(index, 1);
+            saveData();
+            renderMediaGrid();
+            updateReportView();
+            showToast("Fotografia eliminada.");
+        }
+
+        function clearPhotoUrl(index) {
+            if (appData.fotos && appData.fotos[index]) {
+                appData.fotos[index].url = "";
+                saveData();
+                renderMediaGrid();
+                updateReportView();
+            }
+        }
+
+        function handlePhotoUpload(index, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (appData.fotos && appData.fotos[index]) {
+                    appData.fotos[index].url = e.target.result;
+                    saveData();
+                    renderMediaGrid();
+                    updateReportView();
+                    showToast(`Foto ${index + 1} atualizada.`);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updatePhotoDesc(index, value) {
+            if (appData.fotos && appData.fotos[index]) {
+                appData.fotos[index].desc = value;
+                saveData();
+                updateReportView();
+            }
+        }
+
+        function updateVideoUrl(value) {
+            appData.videoUrl = value;
+            saveAndRefresh();
+        }
+
+        function printReport() {
+            readFormInputs();
+            saveData();
+            updateReportView();
+            window.print();
+        }
+
+        function openModal(title, message, onConfirm) {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-message');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            
+            if (titleEl) titleEl.innerText = title;
+            if (msgEl) msgEl.innerText = message;
+            
+            if (confirmBtn) {
+                confirmBtn.onclick = () => {
+                    if (onConfirm) onConfirm();
+                    closeModal();
+                };
+            }
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        // Se o browser tiver guardado um URL antigo do Web App, substitui pelo atual
+        const GS_URL_VERSION = '2026-09-08';
+        function ensureGsUrlUpToDate() {
+            if (localStorage.getItem('mw_gs_url_version') !== GS_URL_VERSION) {
+                localStorage.setItem('mw_gs_webapp_url', DEFAULT_GS_URL);
+                localStorage.setItem('mw_gs_url_version', GS_URL_VERSION);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            ensureGsUrlUpToDate();
+            loadStoredData();
+            populateForm();
+            updateReportView();
+            renderMediaGrid();
+        });
+
+        function loadStoredData() {
+            try {
+                const stored = localStorage.getItem('mw_wash_report_data');
+                if (stored) {
+                    appData = migrarUtensilios(JSON.parse(stored));
+                    if (!appData.fotos || !Array.isArray(appData.fotos) || appData.fotos.length === 0) {
+                        const existing = appData.fotos || [];
+                        appData.fotos = Array(10).fill(null).map((_, i) => existing[i] || { url: "", desc: `Foto ${i + 1}` });
+                    }
+                } else {
+                    appData = JSON.parse(JSON.stringify(SAMPLE_DATA));
+                }
+            } catch (e) {
+                console.error("Erro ao carregar dados guardados:", e);
+                appData = JSON.parse(JSON.stringify(SAMPLE_DATA));
+            }
+        }
+
+        function getHistoryList() {
+            try {
+                const list = localStorage.getItem('mw_wash_reports_history');
+                return list ? JSON.parse(list) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+
+
+        /* ---------- MODO PRÉ-VISUALIZAÇÃO (histórico) ---------- */
+
+        // Guarda o relatório que está em edição enquanto se vê um do histórico
+        let previewBackup = null;
+
+
+        // Restaura os dados em edição sem mudar de separador
+        function restorePreviewData() {
+            if (!previewBackup) return;
+            appData = previewBackup;
+            previewBackup = null;
+            populateForm();
+            renderMediaGrid();
+            updateReportView();
+            const banner = document.getElementById('preview-banner');
+            if (banner) banner.classList.add('hidden');
+        }
+
+        function exitPreview() {
+            restorePreviewData();
+            switchTab('historico');
+            showToast("Pré-visualização fechada. Relatório em edição restaurado.");
+        }
+
+        // Passa o relatório pré-visualizado para edição (substitui o atual)
+        function loadPreviewIntoForm() {
+            if (!previewBackup) return;
+            const id = appData.id;
+            previewBackup = null;
+            saveData();
+            populateForm();
+            renderMediaGrid();
+            updateReportView();
+            const banner = document.getElementById('preview-banner');
+            if (banner) banner.classList.add('hidden');
+            switchTab('geral');
+            showToast(`Relatório '${id}' carregado para edição.`);
+        }
+
+
+
+        function switchTab(tabId) {
+            // Primeira vez que se abre o histórico: lê a base de dados sozinho
+            if (tabId === 'historico' && listaSheet.length === 0) {
+                setTimeout(carregarHistoricoSheet, 150);
+            }
+
+            // Sair da pré-visualização se o utilizador navegar para fora do relatório
+            if (previewBackup && tabId !== 'relatorio') {
+                restorePreviewData();
+            }
+
+            const tabs = ['geral', 'utensilios', 'midia', 'consideracoes', 'relatorio', 'historico'];
+            
+            // Hide all tab contents
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`btn-tab-${t}`);
+                if (el) el.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('bg-brand-700', 'text-white', 'shadow');
+                    btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+                }
+            });
+
+            const activeEl = document.getElementById(`tab-${tabId}`);
+            const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+            if (activeEl) activeEl.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                activeBtn.classList.add('bg-brand-700', 'text-white', 'shadow');
+            }
+
+            if (tabId === 'relatorio') {
+                updateReportView();
+            } else if (tabId === 'historico') {
+                }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function sendToGoogleSheets() {
+            // Em pré-visualização envia o relatório que está a ser visto, sem ler o formulário
+            if (!previewBackup) {
+                readFormInputs();
+            }
+            let gsUrl = localStorage.getItem('mw_gs_webapp_url') || DEFAULT_GS_URL;
+            executeGsPost(gsUrl);
+        }
+
+        function closeGsModal() {
+            document.getElementById('gs-modal').classList.add('hidden');
+        }
+
+        function saveGsUrlAndSend() {
+            const url = getVal('inp-gs-url').trim();
+            if (!url.startsWith('https://script.google.com/macros/s/')) {
+                showToast("Por favor insira um URL válido do Google Apps Script.");
+                return;
+            }
+            localStorage.setItem('mw_gs_webapp_url', url);
+            closeGsModal();
+            executeGsPost(url);
+        }
+
+        function executeGsPost(url) {
+            showToast("A enviar dados para o Google Sheet...");
+
+            // 'text/plain' evita o preflight CORS e o Apps Script continua a ler o JSON.
+            // Sem 'no-cors' conseguimos ler a resposta real e mostrar erros verdadeiros.
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(appData)
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.ok) {
+                    const n = res.linhas || 1;
+                    const f = res.fotos_guardadas;
+                    showToast(`Gravado: ${n} linha${n > 1 ? 's' : ''} no Sheet` +
+                              (f ? `, ${f} foto${f > 1 ? 's' : ''} no Drive` : '') + '.');
+                    if (res.id) delete cacheSheet[res.id];
+                    if (listaSheet.length > 0) carregarHistoricoSheet();
+                } else {
+                    console.error("Resposta do Apps Script:", res);
+                    showToast("Erro no Sheet: " + ((res && res.error) || "resposta inválida"));
+                }
+            })
+            .catch((err) => {
+                console.error("Erro no envio:", err);
+                showToast("Erro ao comunicar com o Google Sheets. Verifique o URL /exec e as permissões.");
+            });
+        }
+
+        /* ---------- LIGHTBOX (ver foto em grande) ---------- */
+
+        let lightboxList = [];
+        let lightboxPos = 0;
+
+        function openLightbox(originalIndex) {
+            lightboxList = (appData.fotos || [])
+                .map((f, idx) => ({ url: f.url, desc: f.desc, n: idx + 1 }))
+                .filter(f => f.url && f.url.trim() !== '');
+
+            if (lightboxList.length === 0) return;
+
+            const pos = lightboxList.findIndex(f => f.n === originalIndex + 1);
+            lightboxPos = pos >= 0 ? pos : 0;
+
+            renderLightbox();
+
+            const box = document.getElementById('lightbox');
+            if (box) {
+                box.classList.remove('hidden');
+                box.classList.add('flex');
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function renderLightbox() {
+            const foto = lightboxList[lightboxPos];
+            if (!foto) return;
+
+            const img = document.getElementById('lightbox-img');
+            const cap = document.getElementById('lightbox-caption');
+            const counter = document.getElementById('lightbox-counter');
+            const prev = document.getElementById('lightbox-prev');
+            const next = document.getElementById('lightbox-next');
+
+            if (img) img.src = urlImagem(foto.url, 2000);
+            if (cap) cap.innerText = foto.desc || `Fotografia ${foto.n}`;
+            if (counter) counter.innerText = `Evidência ${foto.n} · ${lightboxPos + 1} de ${lightboxList.length}`;
+
+            const unica = lightboxList.length < 2;
+            if (prev) prev.classList.toggle('hidden', unica);
+            if (next) next.classList.toggle('hidden', unica);
+        }
+
+        function lightboxNav(delta) {
+            if (lightboxList.length === 0) return;
+            lightboxPos = (lightboxPos + delta + lightboxList.length) % lightboxList.length;
+            renderLightbox();
+        }
+
+        function closeLightbox(event) {
+            // Fecha ao clicar no fundo escuro ou nos botões de fechar
+            if (event && event.target && event.target.id !== 'lightbox') return;
+            const box = document.getElementById('lightbox');
+            if (box) {
+                box.classList.add('hidden');
+                box.classList.remove('flex');
+            }
+            document.body.style.overflow = '';
+        }
+
+        // Abre a imagem numa nova janela (converte base64 em Blob, senão o Chrome bloqueia)
+        function openPhotoInNewTab() {
+            const foto = lightboxList[lightboxPos];
+            if (!foto || !foto.url) return;
+
+            if (foto.url.indexOf('data:') !== 0) {
+                window.open(foto.url, '_blank');
+                return;
+            }
+
+            try {
+                const parts = foto.url.split(',');
+                const mime = (parts[0].match(/:(.*?);/) || [null, 'image/png'])[1];
+                const bin = atob(parts[1]);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+                window.open(blobUrl, '_blank');
+            } catch (e) {
+                console.error("Erro ao abrir a imagem:", e);
+                showToast("Não foi possível abrir a imagem numa nova janela.");
+            }
+        }
+
+        // Teclado: Esc fecha, setas navegam
+        document.addEventListener('keydown', (e) => {
+            const box = document.getElementById('lightbox');
+            if (!box || box.classList.contains('hidden')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') lightboxNav(-1);
+            if (e.key === 'ArrowRight') lightboxNav(1);
+        });
+
+        /* ================= UTENSÍLIOS (lista dinâmica) ================= */
+
+        const OPCOES_TIPO = ["Tabuleiros lisos","Tabuleiros perfurados","Caixas fechadas","Caixas perfuradas","Tabuleiros Gastronorm","Depositadores linhas","Carro Cutter","Baldes","Tinas","Acessórios de equipamentos","Carro sem Tabuleiros","Carro com Tabuleiros","Paletes","Palotes","Moldes/formas"];
+        const OPCOES_MATERIAL = ["Alumínio","Plástico","Teflon","Inox","Ferro","Outro"];
+        const OPCOES_SUJIDADE = ["Carbonizado Padaria","Carbonizado Pastelaria","Carbonizado Cozinha","Gorduras/óleos","Açúcar","Cremes","Massa fresca","Farinha","Restos comida","Sangue","Desmoldantes","Queijo","Ovo cru","Ovo Cozinhado","Proteína Crua","Proteína cozinhada","Sujidade residual"];
+        const OPCOES_OBJETIVO = [
+            { v: "Manutenção diária", l: "Manutenção diária" },
+            { v: "LIMPEZA 100% SEM RESTOS SÓLIDOS NO INTERIOR DA MÁQUINA", l: "LIMPEZA 100% SEM RESTOS SÓLIDOS" },
+            { v: "Descarbonização", l: "Descarbonização" },
+            { v: "Manutenção diária + descarbonização gradual", l: "Manutenção diária + descarbonização gradual" },
+            { v: "Desinfeção", l: "Desinfeção" },
+            { v: "Secagem (Sim)", l: "Secagem (Sim)" },
+            { v: "Secagem (Não)", l: "Secagem (Não)" }
+        ];
+
+        const CAMPOS_PROGRAMA = [
+            { k: "vaporIni", label: "Vapor Inicial", ph: "Ex: 3 min @ 100°C" },
+            { k: "lavagem", label: "Lavagem Principal", ph: "Ex: 10 min @ 65°C" },
+            { k: "centrifInter", label: "Centrifugação Intermédia", ph: "Ex: 2 min (1200 RPM)" },
+            { k: "enxague", label: "Enxaguamento", ph: "Ex: 5 min @ 80°C" },
+            { k: "centrifFin", label: "Centrifugação Final", ph: "Ex: 3 min (1500 RPM)" },
+            { k: "vaporFin", label: "Vapor Final / Secagem", ph: "Ex: 2 min (Esterilização)" }
+        ];
+
+        function utensilioVazio() {
+            return { tipo: "", material: "", sujidade: "", objetivo: "", vaporIni: "", lavagem: "", centrifInter: "", enxague: "", centrifFin: "", vaporFin: "" };
+        }
+
+        // Converte o formato antigo (utensilio1 / utensilio2) para a lista nova
+        function migrarUtensilios(d) {
+            if (Array.isArray(d.utensilios) && d.utensilios.length > 0) return d;
+
+            const lista = [];
+            [1, 2].forEach(n => {
+                const u = {
+                    tipo: d["utensilio" + n] || "",
+                    material: d["material" + n] || "",
+                    sujidade: d["sujidade" + n] || "",
+                    objetivo: d["objetivo" + n] || "",
+                    vaporIni: d["prog" + n + "VaporIni"] || "",
+                    lavagem: d["prog" + n + "Lavagem"] || "",
+                    centrifInter: d["prog" + n + "CentrifInter"] || "",
+                    enxague: d["prog" + n + "Enxague"] || "",
+                    centrifFin: d["prog" + n + "CentrifFin"] || "",
+                    vaporFin: d["prog" + n + "VaporFin"] || ""
+                };
+                const temConteudo = Object.keys(u).some(k => String(u[k]).trim() !== "");
+                if (temConteudo) lista.push(u);
+            });
+
+            d.utensilios = lista.length > 0 ? lista : [utensilioVazio()];
+
+            // Limpa as chaves antigas
+            [1, 2].forEach(n => {
+                delete d["utensilio" + n]; delete d["material" + n]; delete d["sujidade" + n]; delete d["objetivo" + n];
+                ["VaporIni","Lavagem","CentrifInter","Enxague","CentrifFin","VaporFin"].forEach(c => delete d["prog" + n + c]);
+            });
+
+            return d;
+        }
+
+        function opcoesHtml(lista, selecionado, placeholder) {
+            let html = `<option value="">${placeholder}</option>`;
+            lista.forEach(op => {
+                const v = typeof op === 'string' ? op : op.v;
+                const l = typeof op === 'string' ? op : op.l;
+                html += `<option value="${v}" ${v === selecionado ? 'selected' : ''}>${l}</option>`;
+            });
+            return html;
+        }
+
+        function escapeAttr(v) {
+            return String(v || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+
+        function renderUtensilios() {
+            const cont = document.getElementById('utensilios-container');
+            if (!cont) return;
+
+            if (!Array.isArray(appData.utensilios) || appData.utensilios.length === 0) {
+                appData.utensilios = [utensilioVazio()];
+            }
+
+            cont.innerHTML = '';
+            const total = appData.utensilios.length;
+
+            appData.utensilios.forEach((u, i) => {
+                const card = document.createElement('div');
+                card.className = "border border-slate-200 rounded-2xl overflow-hidden";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between bg-brand-50 border-b border-slate-200 px-4 py-2">
+                        <h3 class="text-xs font-black text-brand-800 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-box mr-2"></i> Utensílio ${i + 1}
+                            <span class="ml-2 font-semibold normal-case text-slate-500 text-[11px]">${u.tipo || 'por definir'}</span>
+                        </h3>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="duplicarUtensilio(${i})" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-600 text-[11px] font-bold rounded-lg border border-slate-300 transition" title="Duplicar este utensílio">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                            <button type="button" onclick="removeUtensilio(${i})" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold rounded-lg border border-rose-200 transition ${total <= 1 ? 'opacity-40 cursor-not-allowed' : ''}" title="Eliminar este utensílio" ${total <= 1 ? 'disabled' : ''}>
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">TIPO DE UTENSÍLIO</label>
+                                <select onchange="updateUtensilio(${i}, 'tipo', this.value, true)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    ${opcoesHtml(OPCOES_TIPO, u.tipo, 'Selecione o Utensílio...')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">MATERIAL</label>
+                                <select onchange="updateUtensilio(${i}, 'material', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    ${opcoesHtml(OPCOES_MATERIAL, u.material, 'Selecione o Material...')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">TIPO DE SUJIDADE</label>
+                                <select onchange="updateUtensilio(${i}, 'sujidade', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    ${opcoesHtml(OPCOES_SUJIDADE, u.sujidade, 'Selecione a Sujidade...')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">OBJETIVO DO ENSAIO</label>
+                                <select onchange="updateUtensilio(${i}, 'objetivo', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    ${opcoesHtml(OPCOES_OBJETIVO, u.objetivo, 'Selecione o Objetivo...')}
+                                </select>
+                            </div>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wide">Parâmetros do Ciclo de Lavagem</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            ${CAMPOS_PROGRAMA.map(c => `
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">${c.label}</label>
+                                    <input type="text" value="${escapeAttr(u[c.k])}" oninput="updateUtensilio(${i}, '${c.k}', this.value)" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="${c.ph}">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                cont.appendChild(card);
+            });
+
+            const badge = document.getElementById('tab-utensilios-badge');
+            if (badge) badge.textContent = total;
+        }
+
+        function updateUtensilio(index, campo, valor, redesenhar) {
+            if (!appData.utensilios || !appData.utensilios[index]) return;
+            appData.utensilios[index][campo] = valor;
+            saveData();
+            updateReportView();
+            if (redesenhar) renderUtensilios(); // atualiza o título do cartão
+        }
+
+        function addUtensilio() {
+            if (!Array.isArray(appData.utensilios)) appData.utensilios = [];
+            appData.utensilios.push(utensilioVazio());
+            saveData();
+            renderUtensilios();
+            updateReportView();
+            showToast(`Utensílio ${appData.utensilios.length} adicionado. Vai gerar mais uma linha no Sheet.`);
+            const cont = document.getElementById('utensilios-container');
+            if (cont && cont.lastElementChild) cont.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function duplicarUtensilio(index) {
+            const u = appData.utensilios[index];
+            if (!u) return;
+            appData.utensilios.splice(index + 1, 0, JSON.parse(JSON.stringify(u)));
+            saveData();
+            renderUtensilios();
+            updateReportView();
+            showToast("Utensílio duplicado.");
+        }
+
+        function removeUtensilio(index) {
+            if (!appData.utensilios || appData.utensilios.length <= 1) {
+                showToast("O ensaio tem de ter pelo menos um utensílio.");
+                return;
+            }
+            openModal(
+                "Eliminar Utensílio",
+                `Tem a certeza de que quer eliminar o Utensílio ${index + 1} deste ensaio?`,
+                () => {
+                    appData.utensilios.splice(index, 1);
+                    saveData();
+                    renderUtensilios();
+                    updateReportView();
+                    showToast("Utensílio eliminado.");
+                }
+            );
+        }
+
+        // Blocos de utensílio no relatório
+        function renderReportUtensilios() {
+            const cont = document.getElementById('rep-utensilios');
+            if (!cont) return;
+
+            const lista = Array.isArray(appData.utensilios) ? appData.utensilios : [];
+            cont.innerHTML = '';
+
+            if (lista.length === 0) {
+                cont.innerHTML = `<p class="text-xs italic text-slate-400">Nenhum utensílio registado neste ensaio.</p>`;
+                return;
+            }
+
+            lista.forEach((u, i) => {
+                const bloco = document.createElement('div');
+                bloco.innerHTML = `
+                    <h3 class="text-xs font-extrabold bg-brand-800 text-white px-3 py-1.5 rounded-t-lg tracking-wide uppercase">
+                        Utensílio ${i + 1} de ${lista.length}: Especificação do Ensaio
+                    </h3>
+                    <div class="border border-slate-200 border-t-0 rounded-b-lg p-3 space-y-2 text-xs">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-slate-50 p-2 rounded">
+                            <div><strong class="text-slate-600">Utensílio:</strong> ${u.tipo || '—'}</div>
+                            <div><strong class="text-slate-600">Material:</strong> ${u.material || '—'}</div>
+                            <div><strong class="text-slate-600">Sujidade:</strong> ${u.sujidade || '—'}</div>
+                            <div><strong class="text-slate-600">Objetivo:</strong> ${u.objetivo || '—'}</div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[10px] text-center pt-1">
+                            <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Vapor Inicial</span><span class="font-semibold">${u.vaporIni || '—'}</span></div>
+                            <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Lavagem</span><span class="font-semibold">${u.lavagem || '—'}</span></div>
+                            <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Centr. Interm.</span><span class="font-semibold">${u.centrifInter || '—'}</span></div>
+                            <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Enxaguamento</span><span class="font-semibold">${u.enxague || '—'}</span></div>
+                            <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Centr. Final</span><span class="font-semibold">${u.centrifFin || '—'}</span></div>
+                            <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Vapor Final</span><span class="font-semibold">${u.vaporFin || '—'}</span></div>
+                        </div>
+                    </div>
+                `;
+                cont.appendChild(bloco);
+            });
+        }
+
+        /* ========== ABRIR RELATÓRIO EM NOVO SEPARADOR (ficheiro autónomo) ========== */
+
+        // Gera o HTML completo e autónomo de um relatório (imagens incluídas em base64)
+        function gerarHtmlRelatorio(rep) {
+            const anterior = appData;
+            appData = migrarUtensilios(JSON.parse(JSON.stringify(rep)));
+            updateReportView();
+            const corpo = document.getElementById('rep-print-container').innerHTML;
+            appData = anterior;
+            updateReportView();
+
+            const titulo = `Relatório ${rep.id || ''} — ${rep.cliente || 'MultiWasher'}`;
+            const nUtens = (rep.utensilios && rep.utensilios.length) || 0;
+
+            return `<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${titulo}</title>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['Inter','sans-serif'] },
+  colors: { brand: { 50:'#f0f7ff',100:'#e0effe',200:'#bae0fd',300:'#7cc8fc',400:'#36aff8',500:'#0c94eb',600:'#0076c9',700:'#025ea7',800:'#06508a',900:'#0b4372' } }
+} } }
+<\/script>
+<style>
+@media print {
+  body { background:#fff !important; color:#000 !important; font-size:11pt !important; }
+  .no-print { display:none !important; }
+  .print-container { box-shadow:none !important; border:none !important; padding:0 !important; margin:0 !important; width:100% !important; max-width:100% !important; }
+}
+</style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased pb-10">
+
+  <header class="bg-slate-900 text-white shadow-md no-print">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>
+        <p class="text-xs font-black uppercase tracking-wider">Relatório de Ensaio de Lavagem</p>
+        <p class="text-[11px] text-slate-300">${rep.id || '—'} · ${rep.cliente || '—'} · ${nUtens} utensílio${nUtens === 1 ? '' : 's'}</p>
+      </div>
+      <button type="button" onclick="window.print()" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg shadow transition">
+        <i class="fa-solid fa-print mr-1.5"></i> Imprimir / Guardar PDF
+      </button>
+    </div>
+  </header>
+
+  <div class="max-w-5xl mx-auto px-3 sm:px-4 pt-5">
+    <div class="bg-white border border-slate-300 rounded-2xl shadow-xl p-6 sm:p-10 print-container text-slate-800">
+      ${corpo}
+    </div>
+  </div>
+
+  <script>
+    // Ver as fotos em grande também nesta página
+    document.querySelectorAll('#rep-fotos img, img[alt^="Evidência"]').forEach(function (img) {
+      img.style.cursor = 'zoom-in';
+      img.title = 'Clique para abrir a imagem';
+      img.addEventListener('click', function () {
+        var w = window.open('', '_blank');
+        if (w) w.document.write('<title>Evidência</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + img.src + '" style="max-width:100%;max-height:100vh"></body>');
+      });
+    });
+  <\/script>
+</body>
+</html>`;
+        }
+
+
+
+
+        // Abre o relatório que está em pré-visualização
+        // Abre num separador novo o relatório que está em pré-visualização
+        function abrirPreviewEmNovaAba() {
+            if (!appData.id) return;
+            try {
+                const blob = new Blob([gerarHtmlRelatorio(appData)], { type: 'text/html;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                if (!window.open(url, '_blank')) {
+                    showToast("O browser bloqueou a janela. Autorize pop-ups para este ficheiro.");
+                    return;
+                }
+                setTimeout(() => URL.revokeObjectURL(url), 120000);
+            } catch (e) {
+                console.error(e);
+                showToast("Não foi possível gerar o relatório.");
+            }
+        }
+
+        /* ========== LINK PARTILHÁVEL (servido pelo Google Apps Script) ========== */
+
+        function urlWebApp() {
+            return localStorage.getItem('mw_gs_webapp_url') || DEFAULT_GS_URL;
+        }
+
+        function linkPartilhavel(id) {
+            return urlWebApp() + '?id=' + encodeURIComponent(id);
+        }
+
+        // Abre o relatório online (a versão que está no Google Sheet)
+        function abrirLinkPartilhavel(id) {
+            if (!id) return;
+            const url = linkPartilhavel(id);
+            window.open(url, '_blank');
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url)
+                    .then(() => showToast("Link aberto e copiado para a área de transferência."))
+                    .catch(() => showToast("Link aberto num separador novo."));
+            } else {
+                showToast("Link aberto num separador novo.");
+            }
+        }
+
+        function copiarLinkPartilhavel(id) {
+            if (!id) return;
+            const url = linkPartilhavel(id);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url)
+                    .then(() => showToast("Link copiado. Só funciona depois de enviar o relatório para o Sheet."))
+                    .catch(() => window.prompt("Copie o link do relatório:", url));
+            } else {
+                window.prompt("Copie o link do relatório:", url);
+            }
+        }
+
+        /* ========== HISTÓRICO DO GOOGLE SHEET (base de dados partilhada) ========== */
+
+        let listaSheet = [];
+
+        function urlAcao(acao) {
+            return urlWebApp() + '?acao=' + acao;
+        }
+
+        function carregarHistoricoSheet() {
+            const tbody = document.getElementById('history-sheet-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">
+                    <i class="fa-solid fa-circle-notch fa-spin mr-2"></i> A ler a Folha1...</td></tr>`;
+            }
+
+            fetch(urlAcao('lista'))
+                .then(r => r.json())
+                .then(res => {
+                    if (!res || !res.ok) throw new Error((res && res.error) || 'resposta inválida');
+                    listaSheet = res.relatorios || [];
+                    renderHistoricoSheet();
+                    showToast(`${listaSheet.length} relatório${listaSheet.length === 1 ? '' : 's'} na base de dados.`);
+                })
+                .catch(err => {
+                    console.error("Erro ao ler o Sheet:", err);
+                    if (tbody) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-rose-500 italic">
+                            Não foi possível ler a Folha1. Confirme o URL do Web App e a implementação.</td></tr>`;
+                    }
+                    showToast("Erro ao ler o Google Sheet.");
+                });
+        }
+
+        function renderHistoricoSheet() {
+            const tbody = document.getElementById('history-sheet-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            const contador = document.getElementById('sheet-count');
+            if (contador) contador.textContent = listaSheet.length;
+
+            if (listaSheet.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 italic">
+                    Nenhum relatório na Folha1.</td></tr>`;
+                return;
+            }
+
+            listaSheet.forEach(rep => {
+                const safeId = String(rep.id || '').replace(/'/g, "\\'");
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-emerald-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-brand-700">${rep.id || '—'}</td>
+                    <td class="p-3 text-slate-600">${rep.data || '—'}</td>
+                    <td class="p-3 font-semibold text-slate-800">${rep.cliente || '—'}</td>
+                    <td class="p-3 text-slate-600">${rep.maquina || '—'}</td>
+                    <td class="p-3 text-slate-600">${rep.tecnico || '—'}</td>
+                    <td class="p-3 text-center text-slate-600">
+                        <span class="px-1.5 py-0.5 bg-slate-100 rounded font-bold text-[11px]">${rep.utensilios}</span>
+                        ${rep.fotos ? `<span class="ml-1 text-[10px] text-slate-400"><i class="fa-solid fa-camera"></i> ${rep.fotos}</span>` : ''}
+                    </td>
+<td class="p-3 text-right space-x-1 whitespace-nowrap">${acoesSheet(safeId)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Botões de ação de cada linha, iguais para todos os relatórios da Folha1
+        function acoesSheet(safeId) {
+            return `
+                <button type="button" onclick="verDoSheet('${safeId}')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Pré-visualizar aqui, sem alterar o relatório em edição">
+                    <i class="fa-solid fa-eye mr-1"></i> Ver
+                </button>
+                <button type="button" onclick="abrirDoSheet('${safeId}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Abrir num separador novo do browser">
+                    <i class="fa-solid fa-up-right-from-square mr-1"></i> Abrir
+                </button>
+                <button type="button" onclick="abrirLinkPartilhavel('${safeId}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Abrir e copiar o link partilhável">
+                    <i class="fa-solid fa-link mr-1"></i> Link
+                </button>
+                <button type="button" onclick="descarregarDoSheet('${safeId}')" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-600 font-bold text-[11px] rounded-lg border border-slate-300 transition" title="Guardar como ficheiro HTML para enviar ao cliente">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button type="button" onclick="carregarDoSheet('${safeId}')" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-700 text-white font-bold text-[11px] rounded-lg shadow-sm transition" title="Carregar no formulário para editar">
+                    <i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Carregar
+                </button>
+                <button type="button" onclick="apagarDoSheet('${safeId}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] rounded-lg border border-rose-200 transition" title="Eliminar este relatório da Folha1">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+        }
+
+        /* ---------- Buscar o relatório completo à Folha1 (com cache) ---------- */
+
+        const cacheSheet = {};
+
+        function normalizarRelatorio(rep) {
+            const r = migrarUtensilios(JSON.parse(JSON.stringify(rep)));
+            if (!Array.isArray(r.fotos)) r.fotos = [];
+            r.fotos = r.fotos.map(f => ({ url: f.url || '', desc: f.desc || '' }));
+            while (r.fotos.length < 10) r.fotos.push({ url: '', desc: '' });
+            return r;
+        }
+
+        function comRelatorio(id, aoTerminar) {
+            if (cacheSheet[id]) { aoTerminar(cacheSheet[id]); return; }
+
+            showToast(`A ler '${id}' da Folha1...`);
+            fetch(urlWebApp() + '?id=' + encodeURIComponent(id) + '&formato=json')
+                .then(r => r.json())
+                .then(res => {
+                    if (!res || !res.ok || !res.relatorio) throw new Error((res && res.error) || 'não encontrado');
+                    cacheSheet[id] = normalizarRelatorio(res.relatorio);
+                    aoTerminar(cacheSheet[id]);
+                })
+                .catch(err => {
+                    console.error("Erro ao ler o relatório:", err);
+                    showToast(`Não foi possível ler '${id}' da Folha1.`);
+                });
+        }
+
+        /* ---------- As seis ações ---------- */
+
+        function verDoSheet(id) {
+            comRelatorio(id, rep => {
+                if (!previewBackup) {
+                    readFormInputs();
+                    previewBackup = JSON.parse(JSON.stringify(appData));
+                }
+                appData = JSON.parse(JSON.stringify(rep));
+                updateReportView();
+
+                const banner = document.getElementById('preview-banner');
+                const bannerId = document.getElementById('preview-banner-id');
+                if (bannerId) bannerId.textContent = rep.id || '—';
+                if (banner) banner.classList.remove('hidden');
+
+                switchTab('relatorio');
+                showToast(`Pré-visualização de '${rep.id}'.`);
+            });
+        }
+
+        function abrirDoSheet(id) {
+            comRelatorio(id, rep => {
+                try {
+                    const blob = new Blob([gerarHtmlRelatorio(rep)], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    if (!window.open(url, '_blank')) {
+                        showToast("O browser bloqueou a janela. Autorize pop-ups para este ficheiro.");
+                        return;
+                    }
+                    showToast(`Relatório '${rep.id}' aberto em novo separador.`);
+                    setTimeout(() => URL.revokeObjectURL(url), 120000);
+                } catch (e) {
+                    console.error(e);
+                    showToast("Não foi possível gerar o relatório.");
+                }
+            });
+        }
+
+        function descarregarDoSheet(id) {
+            comRelatorio(id, rep => {
+                try {
+                    const blob = new Blob([gerarHtmlRelatorio(rep)], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Relatorio_${String(rep.id || 'MultiWasher').replace(/[^\w\-]/g, '_')}.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 10000);
+                    showToast("Ficheiro HTML do relatório descarregado.");
+                } catch (e) {
+                    console.error(e);
+                    showToast("Não foi possível gerar o ficheiro.");
+                }
+            });
+        }
+
+        function carregarDoSheet(id) {
+            comRelatorio(id, rep => {
+                openModal(
+                    "Carregar para edição",
+                    `Vai substituir o relatório que está no formulário pelo '${rep.id}'. Continuar?`,
+                    () => {
+                        previewBackup = null;
+                        const banner = document.getElementById('preview-banner');
+                        if (banner) banner.classList.add('hidden');
+
+                        appData = JSON.parse(JSON.stringify(rep));
+                        saveData();
+                        populateForm();
+                        renderMediaGrid();
+                        updateReportView();
+                        switchTab('geral');
+                        showToast(`Relatório '${rep.id}' carregado para edição.`);
+                    }
+                );
+            });
+        }
+
+        function apagarDoSheet(id) {
+            openModal(
+                "Eliminar da Folha1",
+                `Vai apagar todas as linhas do relatório '${id}' na Folha1 e mandar a pasta de fotos para o lixo do Drive. Esta ação não se desfaz. Continuar?`,
+                () => {
+                    showToast(`A apagar '${id}'...`);
+                    fetch(urlWebApp(), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ acao: 'apagar', id: id })
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (!res || !res.ok) throw new Error((res && res.error) || 'resposta inválida');
+                        delete cacheSheet[id];
+                        showToast(`'${id}' apagado (${res.linhas_apagadas} linha${res.linhas_apagadas === 1 ? '' : 's'}).`);
+                        carregarHistoricoSheet();
+                    })
+                    .catch(err => {
+                        console.error("Erro ao apagar:", err);
+                        showToast("Não foi possível apagar o relatório.");
+                    });
+                }
+            );
+        }
+
+        /* ---------- Endereços de imagem ---------- */
+
+        // O Drive dá links do tipo /file/d/ID/view, que são páginas, não imagens.
+        // Para mostrar numa <img> é preciso o endereço de thumbnail.
+        function urlImagem(url, largura) {
+            const s = String(url || '');
+            if (!s) return '';
+            if (s.indexOf('drive.google') < 0) return s;          // base64 ou link externo
+            const m = s.match(/\/d\/([\w-]+)/) || s.match(/[?&]id=([\w-]+)/);
+            if (!m) return s;
+            return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w' + (largura || 1600);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            if (!toast || !msgEl) return;
+            msgEl.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
