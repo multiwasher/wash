@@ -55,6 +55,7 @@
             --mw-panel-soft: rgba(10, 31, 58, 0.74);
             --mw-cyan: #22d3ee;
             --mw-cyan-bright: #67e8f9;
+            --mw-text-accent: #10a7bb;
             --mw-muted: #a5b4c7;
             --mw-line: rgba(34, 211, 238, 0.4);
         }
@@ -183,7 +184,7 @@
         }
 
         #tab-historico table thead tr {
-            color: var(--mw-cyan-bright) !important;
+            color: var(--mw-text-accent) !important;
             border-color: var(--mw-line) !important;
         }
 
@@ -209,7 +210,7 @@
         .text-brand-800,
         .text-brand-700,
         .text-brand-600 {
-            color: var(--mw-cyan-bright) !important;
+            color: var(--mw-text-accent) !important;
         }
 
         @media (max-width: 640px) {
@@ -522,6 +523,45 @@
                     </div>
                 </div>
 
+                <div class="border-t border-slate-200 pt-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <h3 class="text-xs font-black text-brand-800 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Resumo Executivo do Ensaio
+                        </h3>
+                        <span class="text-[10px] text-slate-400 font-medium">Sugestão automática — edite qualquer caixa se não concordar</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[10px] font-black text-emerald-800 uppercase tracking-wide">Pontos Fortes</label>
+                                <button type="button" onclick="repoResumoAuto('forcas')" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline">Repor automático</button>
+                            </div>
+                            <textarea id="resumo-forcas" oninput="updateResumoManual('forcas', this.value)" rows="3" class="w-full px-2 py-1.5 text-[11px] bg-white border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none" placeholder="Uma frase por linha"></textarea>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[10px] font-black text-amber-800 uppercase tracking-wide">Pontos a Melhorar</label>
+                                <button type="button" onclick="repoResumoAuto('melhorar')" class="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline">Repor automático</button>
+                            </div>
+                            <textarea id="resumo-melhorar" oninput="updateResumoManual('melhorar', this.value)" rows="3" class="w-full px-2 py-1.5 text-[11px] bg-white border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Uma frase por linha"></textarea>
+                        </div>
+                        <div class="bg-brand-50 border border-brand-200 rounded-xl p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[10px] font-black text-brand-800 uppercase tracking-wide">Recomendações</label>
+                                <button type="button" onclick="repoResumoAuto('recomendacoes')" class="text-[10px] font-bold text-brand-700 hover:text-brand-900 underline">Repor automático</button>
+                            </div>
+                            <textarea id="resumo-recomendacoes" oninput="updateResumoManual('recomendacoes', this.value)" rows="3" class="w-full px-2 py-1.5 text-[11px] bg-white border border-brand-200 rounded-lg focus:ring-2 focus:ring-brand-400 focus:outline-none" placeholder="Uma frase por linha"></textarea>
+                        </div>
+                        <div class="bg-rose-50 border border-rose-200 rounded-xl p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[10px] font-black text-rose-800 uppercase tracking-wide">Riscos & Alertas</label>
+                                <button type="button" onclick="repoResumoAuto('riscos')" class="text-[10px] font-bold text-rose-700 hover:text-rose-900 underline">Repor automático</button>
+                            </div>
+                            <textarea id="resumo-riscos" oninput="updateResumoManual('riscos', this.value)" rows="3" class="w-full px-2 py-1.5 text-[11px] bg-white border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-400 focus:outline-none" placeholder="Uma frase por linha"></textarea>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="pt-3 flex justify-between">
                     <button type="button" onclick="switchTab('midia')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
                         <i class="fa-solid fa-arrow-left mr-1"></i> Voltar
@@ -659,6 +699,39 @@
                         <span class="text-[10px] uppercase font-bold text-slate-400 block">Equipamento</span>
                         <span id="rep-maquina" class="font-bold text-brand-800"></span>
                         <span id="rep-serial" class="text-[10px] text-slate-500 block"></span>
+                    </div>
+                </div>
+
+                <!-- Section: Resumo Executivo (auto-gerado a partir dos dados do ensaio) -->
+                <div id="rep-resumo-executivo" class="mb-6">
+                    <h3 class="text-xs font-extrabold bg-slate-800 text-white px-3 py-1.5 rounded-t-lg tracking-wide uppercase mb-0">
+                        Resumo Executivo do Ensaio
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border border-t-0 border-slate-200 rounded-b-lg p-3 bg-slate-50">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                            <h4 class="text-[10px] font-black text-emerald-800 uppercase tracking-wide mb-1.5 flex items-center">
+                                <i class="fa-solid fa-circle-check mr-1.5"></i> Pontos Fortes
+                            </h4>
+                            <ul id="rep-resumo-forcas" class="text-[11px] text-emerald-900 space-y-1 list-disc list-inside"></ul>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <h4 class="text-[10px] font-black text-amber-800 uppercase tracking-wide mb-1.5 flex items-center">
+                                <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Pontos a Melhorar
+                            </h4>
+                            <ul id="rep-resumo-melhorar" class="text-[11px] text-amber-900 space-y-1 list-disc list-inside"></ul>
+                        </div>
+                        <div class="bg-brand-50 border border-brand-200 rounded-lg p-3">
+                            <h4 class="text-[10px] font-black text-brand-800 uppercase tracking-wide mb-1.5 flex items-center">
+                                <i class="fa-solid fa-lightbulb mr-1.5"></i> Recomendações
+                            </h4>
+                            <ul id="rep-resumo-recomendacoes" class="text-[11px] text-brand-900 space-y-1 list-disc list-inside"></ul>
+                        </div>
+                        <div class="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                            <h4 class="text-[10px] font-black text-rose-800 uppercase tracking-wide mb-1.5 flex items-center">
+                                <i class="fa-solid fa-shield-halved mr-1.5"></i> Riscos & Alertas
+                            </h4>
+                            <ul id="rep-resumo-riscos" class="text-[11px] text-rose-900 space-y-1 list-disc list-inside"></ul>
+                        </div>
                     </div>
                 </div>
 
@@ -894,6 +967,9 @@
             setVal('inp-consideracoes-previas', appData.consideracoesPrevias);
             setVal('inp-consideracoes', appData.consideracoes);
             setVal('inp-conclusao', appData.conclusao);
+
+            // Resumo Executivo (sugestão automática ou edição manual guardada)
+            preencherTextareasResumo();
         }
 
         function readFormInputs() {
@@ -948,6 +1024,20 @@
                     logoWrapper.classList.remove('flex');
                 }
             }
+
+            // Resumo Executivo: sugestão automática, substituída quadrante a
+            // quadrante pelo que o técnico tiver editado à mão.
+            const resumoAuto = gerarResumoExecutivo(appData);
+            const resumoManual = appData.resumoManual || {};
+            const resumoFinal = {};
+            RESUMO_CAMPOS.forEach(campo => {
+                resumoFinal[campo] = Array.isArray(resumoManual[campo]) ? resumoManual[campo] : resumoAuto[campo];
+            });
+            preencherListaResumo('rep-resumo-forcas', resumoFinal.forcas);
+            preencherListaResumo('rep-resumo-melhorar', resumoFinal.melhorar);
+            preencherListaResumo('rep-resumo-recomendacoes', resumoFinal.recomendacoes);
+            preencherListaResumo('rep-resumo-riscos', resumoFinal.riscos);
+            preencherTextareasResumo();
 
             // Utensílios
             renderReportUtensilios();
@@ -1535,6 +1625,160 @@
             return d;
         }
 
+        /* ---------- RESUMO EXECUTIVO (auto-gerado a partir dos dados do ensaio) ---------- */
+
+        const RESUMO_PALAVRAS_POSITIVAS = ["aprovado","sucesso","100%","eficaz","eficiente","sem danos","excelente","satisfatório","satisfatoria","conforme","ótimo","otimo","muito bom","bom desempenho"];
+        const RESUMO_PALAVRAS_NEGATIVAS = ["reprovado","falha","falhou","não removeu","nao removeu","mancha","resíduo","residuo","dano","insuficiente","problema","dificuldade","não conforme","nao conforme","incompleto","ruído excessivo","ruido excessivo","corrosão","corrosao"];
+
+        // Remove as frases indicadas antes de procurar as palavras-chave, para evitar falsos positivos
+        // por substring (ex: "sem danos" contém "dano"; "não conforme" contém "conforme").
+        function contemAlguma(texto, lista, frasesARemover) {
+            let t = texto;
+            (frasesARemover || []).forEach(f => { t = t.split(f).join(' '); });
+            return lista.some(k => t.includes(k));
+        }
+
+        const RESUMO_NEGACOES_POSITIVAS = ["não conforme", "nao conforme"];
+        const RESUMO_NEGACOES_NEGATIVAS = ["sem danos", "sem dano"];
+
+        function gerarResumoExecutivo(d) {
+            const forcas = [], melhorar = [], recomendacoes = [], riscos = [];
+
+            const conclusao = String(d.conclusao || '').toLowerCase();
+            const consid = String(d.consideracoes || '').toLowerCase();
+            const considPrev = String(d.consideracoesPrevias || '').toLowerCase();
+            const utensilios = Array.isArray(d.utensilios) ? d.utensilios : [];
+            const fotosValidas = (d.fotos || []).filter(f => f.url && f.url.trim() !== '');
+
+            // Pontos fortes
+            if (conclusao && contemAlguma(conclusao, RESUMO_PALAVRAS_POSITIVAS, RESUMO_NEGACOES_POSITIVAS)) {
+                forcas.push("Conclusão do ensaio regista um resultado positivo pelo técnico responsável.");
+            }
+            if (utensilios.length > 0) {
+                const tiposUnicos = new Set(utensilios.map(u => u.tipo).filter(Boolean));
+                const materiaisUnicos = new Set(utensilios.map(u => u.material).filter(Boolean));
+                if (tiposUnicos.size > 1 || materiaisUnicos.size > 1) {
+                    forcas.push(`Ensaio cobre ${tiposUnicos.size} tipo(s) de utensílio e ${materiaisUnicos.size} material(is) diferente(s), alargando a validação do processo.`);
+                }
+                const comObjetivo = utensilios.filter(u => u.objetivo).length;
+                if (comObjetivo === utensilios.length) {
+                    forcas.push(`Todos os ${utensilios.length} utensílio(s) testados têm objetivo de ensaio claramente definido.`);
+                }
+            }
+            if (fotosValidas.length > 0) {
+                forcas.push(`Ensaio documentado com ${fotosValidas.length} fotografia(s) de evidência.`);
+            }
+            if (forcas.length === 0) {
+                forcas.push("Sem indicadores positivos suficientes nos dados atuais do relatório.");
+            }
+
+            // Pontos a melhorar
+            if (conclusao && contemAlguma(conclusao, RESUMO_PALAVRAS_NEGATIVAS, RESUMO_NEGACOES_NEGATIVAS)) {
+                melhorar.push("Conclusão do ensaio menciona limitações ou resultados negativos a validar.");
+            }
+            if (consid && contemAlguma(consid, RESUMO_PALAVRAS_NEGATIVAS, RESUMO_NEGACOES_NEGATIVAS)) {
+                melhorar.push("Considerações durante/pós-ensaio referem problemas ou dificuldades observadas.");
+            }
+            const utensiliosIncompletos = utensilios.filter(u => !u.tipo || !u.material || !u.sujidade || !u.objetivo).length;
+            if (utensiliosIncompletos > 0) {
+                melhorar.push(`${utensiliosIncompletos} utensílio(s) com campos por preencher (tipo, material, sujidade ou objetivo).`);
+            }
+            const semPrograma = utensilios.filter(u => CAMPOS_PROGRAMA.every(c => !String(u[c.k] || '').trim())).length;
+            if (semPrograma > 0) {
+                melhorar.push(`${semPrograma} utensílio(s) sem programa de lavagem documentado.`);
+            }
+            if (!considPrev) {
+                melhorar.push("Não foram registadas considerações prévias ao ensaio.");
+            }
+            if (melhorar.length === 0) {
+                melhorar.push("Nenhum ponto de melhoria identificado nos dados atuais do relatório.");
+            }
+
+            // Recomendações
+            if (fotosValidas.length === 0) {
+                recomendacoes.push("Adicionar fotografias de evidência para reforçar o relatório.");
+            }
+            if (!conclusao) {
+                recomendacoes.push("Preencher a Conclusão e Avaliação Final antes de enviar o relatório.");
+            }
+            if (utensilios.length === 1) {
+                recomendacoes.push("Considerar alargar o ensaio a mais utensílios/materiais para reforçar a validação do processo.");
+            }
+            if (!d.setor) {
+                recomendacoes.push("Definir o setor/indústria do cliente para melhor contextualizar o relatório.");
+            }
+            if (recomendacoes.length === 0) {
+                recomendacoes.push("Sem recomendações adicionais — relatório completo nos dados disponíveis.");
+            }
+
+            // Riscos & Alertas
+            if (!conclusao) {
+                riscos.push("Campo obrigatório 'Conclusão e Avaliação Final' está vazio — relatório incompleto.");
+            }
+            if (conclusao && contemAlguma(conclusao, RESUMO_PALAVRAS_NEGATIVAS, RESUMO_NEGACOES_NEGATIVAS)) {
+                riscos.push("Indicação de reprovação/falha na conclusão — validar antes de partilhar com o cliente.");
+            }
+            if (!d.cliente || !d.data) {
+                riscos.push("Dados de identificação do ensaio incompletos (cliente ou data em falta).");
+            }
+            if (riscos.length === 0) {
+                riscos.push("Sem riscos ou alertas identificados nos dados atuais do relatório.");
+            }
+
+            return { forcas, melhorar, recomendacoes, riscos };
+        }
+
+        function escapeHtml(v) {
+            return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function preencherListaResumo(id, itens) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = itens.map(t => `<li>${escapeHtml(t)}</li>`).join('');
+        }
+
+        /* ---------- Edição manual do Resumo Executivo ---------- */
+
+        const RESUMO_CAMPOS = ['forcas', 'melhorar', 'recomendacoes', 'riscos'];
+        const RESUMO_LABELS = { forcas: 'Pontos Fortes', melhorar: 'Pontos a Melhorar', recomendacoes: 'Recomendações', riscos: 'Riscos & Alertas' };
+
+        // Texto atual de um quadrante: o que o técnico escreveu, ou a sugestão automática
+        function textoResumoQuadrante(campo) {
+            if (appData.resumoManual && Array.isArray(appData.resumoManual[campo])) {
+                return appData.resumoManual[campo].join('\n');
+            }
+            return gerarResumoExecutivo(appData)[campo].join('\n');
+        }
+
+        // Atualiza as 4 caixas de texto sem interromper quem está a escrever nelas
+        function preencherTextareasResumo() {
+            RESUMO_CAMPOS.forEach(campo => {
+                const el = document.getElementById('resumo-' + campo);
+                if (!el || document.activeElement === el) return;
+                el.value = textoResumoQuadrante(campo);
+            });
+        }
+
+        // O técnico editou uma caixa: guarda o texto como substituição manual
+        // (uma frase por linha). Se apagar tudo, volta a usar a sugestão automática.
+        function updateResumoManual(campo, valorTexto) {
+            if (!appData.resumoManual) appData.resumoManual = {};
+            if (valorTexto.trim() === '') {
+                delete appData.resumoManual[campo];
+            } else {
+                appData.resumoManual[campo] = valorTexto.split('\n').map(s => s.trim()).filter(Boolean);
+            }
+            saveAndRefresh();
+        }
+
+        // Descarta a edição manual de um quadrante e volta à sugestão automática
+        function repoResumoAuto(campo) {
+            if (appData.resumoManual) delete appData.resumoManual[campo];
+            saveAndRefresh();
+            preencherTextareasResumo();
+            showToast(`"${RESUMO_LABELS[campo]}" reposto para a sugestão automática.`);
+        }
+
         function opcoesHtml(lista, selecionado, placeholder) {
             let html = `<option value="">${placeholder}</option>`;
             lista.forEach(op => {
@@ -2096,6 +2340,7 @@ tailwind.config = { theme: { extend: {
                 tecnico: "", maquina: "", serialNumber: "",
                 utensilios: [utensilioVazio()],
                 consideracoesPrevias: "", consideracoes: "", conclusao: "",
+                resumoManual: {},
                 fotos: Array(10).fill(null).map((_, i) => ({ url: "", desc: "" })),
                 videoUrl: ""
             };
