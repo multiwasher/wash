@@ -67,7 +67,8 @@ var HEADERS = [
   "Fotos / Evidências (JSON)",
   "Vídeo URL",
   "Pasta Drive (URL)",
-  "Resumo Executivo Manual (JSON)"
+  "Resumo Executivo Manual (JSON)",
+  "Resumo IA (texto)"
 ];
 
 var LOGO_SOMENGIL = "https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png";
@@ -84,6 +85,13 @@ function doPost(e) {
     }
 
     var d = JSON.parse(e.postData.contents);
+
+    // Resumo em texto via IA (pedido pela app): proxy seguro para a Hugging
+    // Face — o token fica só aqui no servidor (Propriedades do Script),
+    // nunca é enviado ao browser nem ao repositório.
+    if (d.acao === "resumoIA") {
+      return jsonOut(gerarResumoIAServidor(d.texto));
+    }
 
     // Eliminar um relatório (pedido pela app)
     if (d.acao === "apagar") {
@@ -130,7 +138,8 @@ function doPost(e) {
         txt(u.enxague), txt(u.centrifFin), txt(u.vaporFin),
         txt(d.consideracoesPrevias), txt(d.consideracoes), txt(d.conclusao),
         txt(fotosJson), txt(d.videoUrl), txt(pastaUrl),
-        txt(d.resumoManual ? JSON.stringify(d.resumoManual) : "")
+        txt(d.resumoManual ? JSON.stringify(d.resumoManual) : ""),
+        txt(d.resumoIA)
       ];
     });
 
@@ -297,6 +306,8 @@ function lerRelatorio(id) {
     videoUrl: String(p[25]),
     pasta: String(p[26]),
     resumoManual: resumoManual,
+    // Uso interno: volta para a app ao editar, mas nunca é mostrado no relatório
+    resumoIA: String(p[28] || ""),
     atualizado: p[0] instanceof Date ? Utilities.formatDate(p[0], Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm") : ""
   };
 }
@@ -433,6 +444,101 @@ function mesclarResumoExecutivo(auto, manual) {
     final[campo] = Array.isArray(manual[campo]) ? manual[campo] : auto[campo];
   });
   return final;
+}
+
+/** ============================ RESUMO EM TEXTO VIA IA (Hugging Face) ============================ **/
+
+/**
+ * Modelo de instruções multilingue, servido pelo router da Hugging Face no
+ * endpoint compatível com OpenAI (/v1/chat/completions), que encaminha para o
+ * fornecedor disponível. Um sumarizador puro (tipo mT5/BART) não serve aqui:
+ * devolve uma frase sobre o texto em vez de redigir uma avaliação do ensaio.
+ *
+ * O token nunca vive aqui no código — é lido das Propriedades do Script
+ * (Editor do Apps Script -> Definições do projeto -> Propriedades do script ->
+ * HF_TOKEN), para nunca ficar exposto no repositório nem no browser.
+ */
+var HF_MODELO_RESUMO = "meta-llama/Llama-3.1-8B-Instruct";
+
+var HF_INSTRUCOES_RESUMO =
+  "És um técnico de engenharia de lavagem industrial da Somengil (MultiWasher) a redigir o " +
+  "resumo executivo de um relatório de ensaio de lavagem, para ser lido pelo cliente.\n\n" +
+  "Escreve UM ÚNICO parágrafo corrido, em português de Portugal, com 2 a 4 frases (máximo 70 " +
+  "palavras), que sintetize o ensaio: o que foi lavado, em que equipamento, com que resultado " +
+  "e o que daí se conclui.\n\n" +
+  "Regras:\n" +
+  "- Usa exclusivamente a informação dada. Nunca inventes valores, temperaturas, percentagens " +
+  "ou conclusões que não estejam no texto.\n" +
+  "- Não descrevas o documento nem o teu próprio trabalho (nada de \"este relatório descreve\").\n" +
+  "- Não uses listas, títulos, aspas nem marcadores. Só o parágrafo.\n" +
+  "- Tom profissional e objetivo, na terceira pessoa.\n" +
+  "- Se a informação for escassa, escreve apenas o que é suportado pelos dados.";
+
+function gerarResumoIAServidor(texto) {
+  var token = PropertiesService.getScriptProperties().getProperty("HF_TOKEN");
+  if (!token) {
+    return { ok: false, error: "Token da Hugging Face não configurado no servidor (Propriedades do Script > HF_TOKEN)." };
+  }
+  if (!texto || !String(texto).trim()) {
+    return { ok: false, error: "Texto vazio para resumir." };
+  }
+
+  try {
+    var resp = UrlFetchApp.fetch("https://router.huggingface.co/v1/chat/completions", {
+      method: "post",
+      contentType: "application/json",
+      headers: { Authorization: "Bearer " + token },
+      payload: JSON.stringify({
+        model: HF_MODELO_RESUMO,
+        messages: [
+          { role: "system", content: HF_INSTRUCOES_RESUMO },
+          { role: "user", content: "Dados registados no ensaio:\n\n" + String(texto) }
+        ],
+        max_tokens: 220,
+        temperature: 0.3
+      }),
+      muteHttpExceptions: true
+    });
+
+    var codigo = resp.getResponseCode();
+    var data = JSON.parse(resp.getContentText());
+
+    if (codigo < 200 || codigo >= 300) {
+      var msg = data && data.error;
+      return { ok: false, error: (msg && msg.message ? msg.message : msg) || ("Erro HTTP " + codigo + " na Hugging Face.") };
+    }
+
+    var escolha = data && data.choices && data.choices[0];
+    var conteudo = escolha && escolha.message && escolha.message.content;
+    if (conteudo && String(conteudo).trim()) {
+      return { ok: true, texto: limparResumoIA(conteudo) };
+    }
+    return { ok: false, error: "Resposta inesperada da Hugging Face." };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+// Modelos de instruções gostam de embrulhar a resposta em aspas ou de a
+// anunciar ("Resumo executivo:"); isto devolve só o parágrafo.
+function limparResumoIA(conteudo) {
+  var t = String(conteudo).trim();
+  t = t.replace(/^(resumo executivo|resumo)\s*:\s*/i, "");
+  t = t.replace(/^["“']+|["”']+$/g, "");
+  return t.trim();
+}
+
+/** Teste rápido: confirma o token, a autorização de acesso externo e o modelo. */
+function testarResumoIA() {
+  var r = gerarResumoIAServidor(
+    "Cliente: Arcor\n" +
+    "Setor/Indústria: Indústria alimentar\n" +
+    "Equipamento: MultiWasher MW-3\n" +
+    "Utensílio 1 — tipo tabuleiros de cozedura; material aço inoxidável; sujidade gordura carbonizada; " +
+    "objetivo do ensaio remoção total sem abrasivos; lavagem principal 10 min @ 65°C; enxaguamento 5 min @ 80°C\n" +
+    "Evidências fotográficas: 4 fotografia(s), legendadas: antes da lavagem; depois da lavagem\n" +
+    "Conclusão e avaliação final do técnico: Processo APROVADO. Remoção de 100% da sujidade sem danos nos utensílios.");
+  Logger.log(JSON.stringify(r));
 }
 
 /** ============================ DRIVE ============================ **/

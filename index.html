@@ -143,6 +143,13 @@
             color: #64748b;
         }
 
+        /* A altura é gerida por ajustarAlturaTextarea(): sem scroll interno nem
+           puxador de redimensionar, que ficariam a lutar com a altura calculada. */
+        textarea {
+            overflow-y: hidden;
+            resize: none;
+        }
+
         #form-container .bg-slate-50:not(input):not(select):not(textarea),
         #tab-historico .bg-emerald-50\/40 {
             background: var(--mw-panel-soft) !important;
@@ -560,6 +567,17 @@
                             <textarea id="resumo-riscos" oninput="updateResumoManual('riscos', this.value)" rows="3" class="w-full px-2 py-1.5 text-[11px] bg-white border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-400 focus:outline-none" placeholder="Uma frase por linha"></textarea>
                         </div>
                     </div>
+
+                    <div class="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <div class="flex items-center justify-between mb-1 gap-2">
+                            <label class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Resumo (gerado por IA)</label>
+                            <button type="button" id="btn-resumo-ia" onclick="gerarResumoIA()" class="text-[10px] font-bold text-white bg-brand-600 hover:bg-brand-700 px-2.5 py-1 rounded-lg shadow-sm transition flex items-center shrink-0">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Gerar resumo com IA
+                            </button>
+                        </div>
+                        <textarea id="resumo-ia-texto" oninput="updateResumoIAManual(this.value)" rows="2" class="w-full px-2 py-1.5 text-[11px] bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-400 focus:outline-none" placeholder="Clique em &quot;Gerar resumo com IA&quot; para redigir automaticamente um resumo executivo a partir dos dados preenchidos no ensaio."></textarea>
+                        <p class="text-[10px] text-slate-400 mt-1">Uso interno: fica guardado com o relatório, mas não aparece no documento entregue ao cliente.</p>
+                    </div>
                 </div>
 
                 <div class="pt-3 flex justify-between">
@@ -906,6 +924,27 @@
             const el = document.getElementById(id);
             if (el) el.innerText = text !== undefined && text !== null && text !== '' ? text : '—';
         }
+
+        /* ---------- Caixas de texto que crescem com o conteúdo ----------
+           Com altura fixa, num telemóvel só se veem 2 ou 3 linhas de cada vez.
+           Uma caixa escondida mede scrollHeight 0, por isso o ajuste é repetido
+           sempre que o separador passa a estar visível. */
+        function ajustarAlturaTextarea(el) {
+            if (!el || el.offsetParent === null) return;
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+
+        function ajustarTextareasVisiveis() {
+            document.querySelectorAll('textarea').forEach(ajustarAlturaTextarea);
+        }
+
+        document.addEventListener('input', (e) => {
+            if (e.target && e.target.tagName === 'TEXTAREA') ajustarAlturaTextarea(e.target);
+        });
+
+        // Rodar o telemóvel muda a largura e, com ela, o número de linhas
+        window.addEventListener('resize', ajustarTextareasVisiveis);
 
         function normalizarParteId(value) {
             return String(value || '')
@@ -1285,7 +1324,7 @@
         }
 
         // Se o browser tiver guardado um URL antigo do Web App, substitui pelo atual
-        const GS_URL_VERSION = '2026-09-08';
+        const GS_URL_VERSION = '2026-09-15';
         function ensureGsUrlUpToDate() {
             if (localStorage.getItem('mw_gs_url_version') !== GS_URL_VERSION) {
                 localStorage.setItem('mw_gs_webapp_url', DEFAULT_GS_URL);
@@ -1300,6 +1339,7 @@
             updateReportView();
             renderMediaGrid();
             mostrarEcraInicial();
+            ajustarTextareasVisiveis();
         });
 
         function loadStoredData() {
@@ -1413,6 +1453,7 @@
                 updateReportView();
             }
 
+            ajustarTextareasVisiveis();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -1757,6 +1798,9 @@
                 if (!el || document.activeElement === el) return;
                 el.value = textoResumoQuadrante(campo);
             });
+            const elIA = document.getElementById('resumo-ia-texto');
+            if (elIA && document.activeElement !== elIA) elIA.value = appData.resumoIA || '';
+            ajustarTextareasVisiveis();
         }
 
         // O técnico editou uma caixa: guarda o texto como substituição manual
@@ -1777,6 +1821,109 @@
             saveAndRefresh();
             preencherTextareasResumo();
             showToast(`"${RESUMO_LABELS[campo]}" reposto para a sugestão automática.`);
+        }
+
+        /* ---------- Resumo em texto via IA (via Apps Script -> Hugging Face) ---------- */
+
+        // O técnico editou a caixa de resumo IA à mão: guarda como texto livre
+        function updateResumoIAManual(valorTexto) {
+            appData.resumoIA = valorTexto.trim();
+            saveAndRefresh();
+        }
+
+        // Reúne os campos do relatório que o técnico preencheu (identificação,
+        // utensílios, programa de lavagem, evidências e considerações), para a
+        // IA redigir o resumo a partir dos dados reais do ensaio.
+        function textoBaseResumoIA() {
+            const d = appData;
+            const linhas = [];
+            const juntar = (rotulo, valor) => {
+                const v = String(valor || '').trim();
+                if (v) linhas.push(rotulo + ': ' + v);
+            };
+
+            juntar('Cliente', d.cliente);
+            juntar('Setor/Indústria', d.setor);
+            juntar('Data do ensaio', d.data);
+            juntar('Técnico responsável', d.tecnico);
+            juntar('Equipamento', d.maquina);
+            juntar('Nº de série', d.serialNumber);
+
+            (d.utensilios || []).forEach((u, i) => {
+                const detalhes = [];
+                const add = (rotulo, valor) => {
+                    const v = String(valor || '').trim();
+                    if (v) detalhes.push(rotulo + ' ' + v);
+                };
+                add('tipo', u.tipo);
+                add('material', u.material);
+                add('sujidade', u.sujidade);
+                add('objetivo do ensaio', u.objetivo);
+                CAMPOS_PROGRAMA.forEach(c => add(c.label.toLowerCase(), u[c.k]));
+                if (detalhes.length) linhas.push(`Utensílio ${i + 1} — ` + detalhes.join('; '));
+            });
+
+            const fotos = (d.fotos || []).filter(f => String(f.url || '').trim() || String(f.desc || '').trim());
+            if (fotos.length) {
+                const descricoes = fotos.map(f => String(f.desc || '').trim()).filter(Boolean);
+                juntar('Evidências fotográficas', `${fotos.length} fotografia(s)` +
+                    (descricoes.length ? ', legendadas: ' + descricoes.join('; ') : ''));
+            }
+            if (String(d.videoUrl || '').trim()) linhas.push('Ensaio tem vídeo registado.');
+
+            juntar('Considerações prévias ao ensaio', d.consideracoesPrevias);
+            juntar('Considerações durante/pós-ensaio', d.consideracoes);
+            juntar('Conclusão e avaliação final do técnico', d.conclusao);
+
+            return linhas.join('\n');
+        }
+
+        // Pede ao Apps Script para gerar uma linha de resumo executivo (via
+        // Hugging Face) a partir dos 4 quadrantes do Resumo Executivo. O token
+        // da Hugging Face fica só no servidor (Propriedades do Script), nunca
+        // neste ficheiro nem no browser de quem usa a app.
+        async function gerarResumoIA() {
+            const textoEntrada = textoBaseResumoIA();
+            if (!textoEntrada) {
+                showToast('Preencha primeiro os quadrantes do Resumo Executivo acima.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-resumo-ia');
+            const campo = document.getElementById('resumo-ia-texto');
+            const textoOriginal = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> A gerar...';
+            }
+            if (campo) campo.value = 'A contactar a IA...';
+
+            try {
+                const resp = await fetch(urlWebApp(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ acao: 'resumoIA', texto: textoEntrada })
+                });
+
+                const data = await resp.json();
+                if (!data || !data.ok) {
+                    throw new Error((data && data.error) || ('Erro HTTP ' + resp.status));
+                }
+
+                appData.resumoIA = data.texto;
+                if (campo) campo.value = data.texto;
+                saveAndRefresh();
+                showToast('Resumo executivo gerado por IA.');
+            } catch (e) {
+                console.error('Erro ao gerar resumo IA:', e);
+                if (campo) campo.value = appData.resumoIA || '';
+                showToast('Erro ao gerar resumo com IA: ' + e.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = textoOriginal;
+                }
+            }
         }
 
         function opcoesHtml(lista, selecionado, placeholder) {
@@ -2340,7 +2487,7 @@ tailwind.config = { theme: { extend: {
                 tecnico: "", maquina: "", serialNumber: "",
                 utensilios: [utensilioVazio()],
                 consideracoesPrevias: "", consideracoes: "", conclusao: "",
-                resumoManual: {},
+                resumoManual: {}, resumoIA: "",
                 fotos: Array(10).fill(null).map((_, i) => ({ url: "", desc: "" })),
                 videoUrl: ""
             };
