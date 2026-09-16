@@ -463,7 +463,32 @@ var HF_MODELO_RESUMO = "meta-llama/Llama-3.1-8B-Instruct";
 // Fallback: quando a Hugging Face falha (tipicamente créditos esgotados), o
 // mesmo pedido segue para o Groq, que expõe a mesma API compatível com a
 // OpenAI. A chave vive nas Propriedades do Script (grToken).
-var GROQ_MODELO_RESUMO = "llama-3.3-70b-versatile";
+//
+// O Groq vai desativando modelos antigos e nem todas as contas têm acesso aos
+// mesmos, por isso a lista é tentada por ordem: se um modelo não existir (ou
+// não estiver disponível para a chave), passa ao seguinte. Para ver os modelos
+// que ESTA chave tem, correr listarModelosGroq() e pôr o preferido à cabeça.
+// (Ficam de fora os groq/compound, que são agentes com pesquisa na web, e os
+// whisper/prompt-guard, que não redigem texto.)
+var GROQ_MODELOS_RESUMO = [
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "qwen/qwen3.8-27b"
+];
+
+/**
+ * Os modelos de raciocínio (gpt-oss, qwen3) gastam tokens a "pensar" antes de
+ * responder: com o limite de 220 do pedido normal, o orçamento esgotava-se no
+ * raciocínio e o conteúdo vinha vazio. Para estes dá-se mais folga e pede-se o
+ * menor esforço de raciocínio — o resumo é curto e não precisa de mais.
+ */
+function extrasDoModelo(modelo) {
+  var m = String(modelo);
+  if (m.indexOf("gpt-oss") >= 0 || m.indexOf("qwen3") >= 0) {
+    return { max_tokens: 1200, reasoning_effort: "low" };
+  }
+  return null;
+}
 
 var HF_INSTRUCOES_RESUMO =
   "És um técnico de engenharia de lavagem industrial da Somengil (MultiWasher) a redigir o " +
@@ -514,17 +539,73 @@ function gerarResumoIAServidor(texto) {
     return { ok: false, error: erros.join(" ") };
   }
 
-  var groq = pedirResumoChat({
-    url: "https://api.groq.com/openai/v1/chat/completions",
-    token: tokenGroq,
-    modelo: GROQ_MODELO_RESUMO,
-    fornecedor: "Groq",
-    texto: texto
-  });
-  if (groq.ok) return groq;
+  for (var i = 0; i < GROQ_MODELOS_RESUMO.length; i++) {
+    var groq = pedirResumoChat({
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      token: tokenGroq,
+      modelo: GROQ_MODELOS_RESUMO[i],
+      fornecedor: "Groq",
+      texto: texto
+    });
+    if (groq.ok) return groq;
 
-  erros.push(groq.error);
+    erros.push(groq.error);
+    // Modelo indisponível para esta chave: vale a pena tentar o seguinte.
+    // Qualquer outro erro (limite de pedidos, chave inválida) repetir-se-ia.
+    if (!erroDeModelo(groq.error)) break;
+    Logger.log("Modelo " + GROQ_MODELOS_RESUMO[i] + " indisponível no Groq, a tentar o seguinte.");
+  }
+
   return { ok: false, error: erros.join(" ") };
+}
+
+// Distingue "este modelo não serve" de "este pedido não passa" (chave inválida,
+// limite atingido), para só percorrer a lista quando faz sentido.
+function erroDeModelo(erro) {
+  var e = String(erro || "").toLowerCase();
+  return e.indexOf("does not exist") >= 0
+      || e.indexOf("decommissioned") >= 0
+      || e.indexOf("model_not_found") >= 0
+      || e.indexOf("no longer supported") >= 0;
+}
+
+/** Lista os modelos que a chave do Groq (grToken) pode usar. */
+function listarModelosGroq() {
+  var token = PropertiesService.getScriptProperties().getProperty("grToken");
+  if (!token) { Logger.log("Falta a propriedade grToken."); return; }
+
+  var resp = UrlFetchApp.fetch("https://api.groq.com/openai/v1/models", {
+    headers: { Authorization: "Bearer " + token },
+    muteHttpExceptions: true
+  });
+
+  if (resp.getResponseCode() !== 200) {
+    Logger.log("Erro " + resp.getResponseCode() + ": " + resp.getContentText());
+    return;
+  }
+
+  var ids = (JSON.parse(resp.getContentText()).data || []).map(function (m) { return m.id; });
+  ids.sort();
+  Logger.log("Modelos disponíveis (" + ids.length + "):\n" + ids.join("\n"));
+}
+
+// Corpo do pedido: igual para todos, mais os acertos que certos modelos pedem.
+function corpoDoPedido(cfg) {
+  var corpo = {
+    model: cfg.modelo,
+    messages: [
+      { role: "system", content: HF_INSTRUCOES_RESUMO },
+      { role: "user", content: "Dados registados no ensaio:\n\n" + String(cfg.texto) }
+    ],
+    max_tokens: 220,
+    temperature: 0.3
+  };
+
+  var extras = extrasDoModelo(cfg.modelo);
+  if (extras) {
+    Object.keys(extras).forEach(function (k) { corpo[k] = extras[k]; });
+  }
+  return corpo;
 }
 
 /**
@@ -537,15 +618,7 @@ function pedirResumoChat(cfg) {
       method: "post",
       contentType: "application/json",
       headers: { Authorization: "Bearer " + cfg.token },
-      payload: JSON.stringify({
-        model: cfg.modelo,
-        messages: [
-          { role: "system", content: HF_INSTRUCOES_RESUMO },
-          { role: "user", content: "Dados registados no ensaio:\n\n" + String(cfg.texto) }
-        ],
-        max_tokens: 220,
-        temperature: 0.3
-      }),
+      payload: JSON.stringify(corpoDoPedido(cfg)),
       muteHttpExceptions: true
     });
 
@@ -565,7 +638,11 @@ function pedirResumoChat(cfg) {
     if (conteudo && String(conteudo).trim()) {
       return { ok: true, texto: limparResumoIA(conteudo), fornecedor: cfg.fornecedor };
     }
-    return { ok: false, error: cfg.fornecedor + ": resposta inesperada." };
+    // Sem texto: o motivo (ex. "length", orçamento de tokens gasto a raciocinar)
+    // diz logo o que ajustar, em vez de um "resposta inesperada" cego.
+    var motivo = escolha && escolha.finish_reason;
+    return { ok: false, error: cfg.fornecedor + " (" + cfg.modelo + "): resposta sem texto" +
+                               (motivo ? " [" + motivo + "]" : "") + "." };
   } catch (err) {
     return { ok: false, error: cfg.fornecedor + ": " + String(err) };
   }
