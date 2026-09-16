@@ -87,8 +87,8 @@ function doPost(e) {
     var d = JSON.parse(e.postData.contents);
 
     // Resumo em texto via IA (pedido pela app): proxy seguro para a Hugging
-    // Face — o token fica só aqui no servidor (Propriedades do Script),
-    // nunca é enviado ao browser nem ao repositório.
+    // Face, com fallback para o Groq — os tokens ficam só aqui no servidor
+    // (Propriedades do Script), nunca são enviados ao browser nem ao repositório.
     if (d.acao === "resumoIA") {
       return jsonOut(gerarResumoIAServidor(d.texto));
     }
@@ -460,6 +460,11 @@ function mesclarResumoExecutivo(auto, manual) {
  */
 var HF_MODELO_RESUMO = "meta-llama/Llama-3.1-8B-Instruct";
 
+// Fallback: quando a Hugging Face falha (tipicamente créditos esgotados), o
+// mesmo pedido segue para o Groq, que expõe a mesma API compatível com a
+// OpenAI. A chave vive nas Propriedades do Script (grToken).
+var GROQ_MODELO_RESUMO = "llama-3.3-70b-versatile";
+
 var HF_INSTRUCOES_RESUMO =
   "És um técnico de engenharia de lavagem industrial da Somengil (MultiWasher) a redigir o " +
   "resumo executivo de um relatório de ensaio de lavagem, para ser lido pelo cliente.\n\n" +
@@ -474,25 +479,69 @@ var HF_INSTRUCOES_RESUMO =
   "- Tom profissional e objetivo, na terceira pessoa.\n" +
   "- Se a informação for escassa, escreve apenas o que é suportado pelos dados.";
 
+/**
+ * Pede o resumo à Hugging Face e, se esta falhar (sem créditos, sem token,
+ * modelo indisponível, erro de rede), repete o mesmo pedido no Groq.
+ * Devolve também que fornecedor respondeu, para ficar visível na app.
+ */
 function gerarResumoIAServidor(texto) {
-  var token = PropertiesService.getScriptProperties().getProperty("HF_TOKEN");
-  if (!token) {
-    return { ok: false, error: "Token da Hugging Face não configurado no servidor (Propriedades do Script > HF_TOKEN)." };
-  }
   if (!texto || !String(texto).trim()) {
     return { ok: false, error: "Texto vazio para resumir." };
   }
 
+  var props = PropertiesService.getScriptProperties();
+  var erros = [];
+
+  var tokenHF = props.getProperty("HF_TOKEN");
+  if (tokenHF) {
+    var hf = pedirResumoChat({
+      url: "https://router.huggingface.co/v1/chat/completions",
+      token: tokenHF,
+      modelo: HF_MODELO_RESUMO,
+      fornecedor: "Hugging Face",
+      texto: texto
+    });
+    if (hf.ok) return hf;
+    erros.push(hf.error);
+    Logger.log("Hugging Face falhou, a tentar o Groq: " + hf.error);
+  } else {
+    erros.push("Token da Hugging Face não configurado (Propriedades do Script > HF_TOKEN).");
+  }
+
+  var tokenGroq = props.getProperty("grToken");
+  if (!tokenGroq) {
+    erros.push("Chave do Groq não configurada (Propriedades do Script > grToken).");
+    return { ok: false, error: erros.join(" ") };
+  }
+
+  var groq = pedirResumoChat({
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    token: tokenGroq,
+    modelo: GROQ_MODELO_RESUMO,
+    fornecedor: "Groq",
+    texto: texto
+  });
+  if (groq.ok) return groq;
+
+  erros.push(groq.error);
+  return { ok: false, error: erros.join(" ") };
+}
+
+/**
+ * Uma só chamada a um endpoint de chat compatível com a OpenAI (Hugging Face
+ * ou Groq): mesmas instruções, mesmo corpo, só muda o URL, o token e o modelo.
+ */
+function pedirResumoChat(cfg) {
   try {
-    var resp = UrlFetchApp.fetch("https://router.huggingface.co/v1/chat/completions", {
+    var resp = UrlFetchApp.fetch(cfg.url, {
       method: "post",
       contentType: "application/json",
-      headers: { Authorization: "Bearer " + token },
+      headers: { Authorization: "Bearer " + cfg.token },
       payload: JSON.stringify({
-        model: HF_MODELO_RESUMO,
+        model: cfg.modelo,
         messages: [
           { role: "system", content: HF_INSTRUCOES_RESUMO },
-          { role: "user", content: "Dados registados no ensaio:\n\n" + String(texto) }
+          { role: "user", content: "Dados registados no ensaio:\n\n" + String(cfg.texto) }
         ],
         max_tokens: 220,
         temperature: 0.3
@@ -501,21 +550,24 @@ function gerarResumoIAServidor(texto) {
     });
 
     var codigo = resp.getResponseCode();
-    var data = JSON.parse(resp.getContentText());
+    var bruto = resp.getContentText();
+    var data = null;
+    try { data = JSON.parse(bruto); } catch (e) { data = null; }
 
     if (codigo < 200 || codigo >= 300) {
       var msg = data && data.error;
-      return { ok: false, error: (msg && msg.message ? msg.message : msg) || ("Erro HTTP " + codigo + " na Hugging Face.") };
+      msg = (msg && msg.message ? msg.message : msg) || bruto;
+      return { ok: false, error: cfg.fornecedor + ": " + (msg || ("erro HTTP " + codigo)) };
     }
 
     var escolha = data && data.choices && data.choices[0];
     var conteudo = escolha && escolha.message && escolha.message.content;
     if (conteudo && String(conteudo).trim()) {
-      return { ok: true, texto: limparResumoIA(conteudo) };
+      return { ok: true, texto: limparResumoIA(conteudo), fornecedor: cfg.fornecedor };
     }
-    return { ok: false, error: "Resposta inesperada da Hugging Face." };
+    return { ok: false, error: cfg.fornecedor + ": resposta inesperada." };
   } catch (err) {
-    return { ok: false, error: String(err) };
+    return { ok: false, error: cfg.fornecedor + ": " + String(err) };
   }
 }
 
@@ -528,7 +580,7 @@ function limparResumoIA(conteudo) {
   return t.trim();
 }
 
-/** Teste rápido: confirma o token, a autorização de acesso externo e o modelo. */
+/** Teste rápido: confirma os tokens, a autorização de acesso externo e os modelos. */
 function testarResumoIA() {
   var r = gerarResumoIAServidor(
     "Cliente: Arcor\n" +

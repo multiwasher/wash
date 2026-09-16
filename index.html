@@ -1913,7 +1913,9 @@
                 appData.resumoIA = data.texto;
                 if (campo) campo.value = data.texto;
                 saveAndRefresh();
-                showToast('Resumo executivo gerado por IA.');
+                showToast(data.fornecedor
+                    ? `Resumo executivo gerado por IA (${data.fornecedor}).`
+                    : 'Resumo executivo gerado por IA.');
             } catch (e) {
                 console.error('Erro ao gerar resumo IA:', e);
                 if (campo) campo.value = appData.resumoIA || '';
