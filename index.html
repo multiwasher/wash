@@ -257,7 +257,7 @@
     <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center space-x-3">
-                <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1780388699/somengil_logo_white_V2_hvewaq.png" alt="Somengil Logo" class="h-10 w-auto object-contain p-1 rounded-lg shadow-sm">
+                <img src="https://res.cloudinary.com/dlkkjtgvy/image/upload/v1780388699/somengil_logo_white_V2_hvewaq.png" alt="Somengil Logo" title="Duplo clique para abrir a pasta no Google Drive" ondblclick="window.open('https://drive.google.com/drive/folders/1bCvjoSq-96_fggxWWSPhG2Fm-BczOCuE?usp=sharing', '_blank', 'noopener,noreferrer')" class="h-10 w-auto object-contain p-1 rounded-lg shadow-sm cursor-pointer">
                 <div>
                     <h1 class="font-extrabold text-lg tracking-tight leading-none text-white">MULTIWASHER</h1>
                     <p class="text-[11px] text-slate-400 font-medium">WASH REPORT</p>
@@ -1185,7 +1185,7 @@
                 videoContainer.innerHTML = `
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
                         <label class="block text-xs font-bold text-slate-700">
-                            <i class="fa-solid fa-video mr-1 text-brand-600"></i> LINK DO VÍDEO DO ENSAIO (YouTube / Vimeo / Cloud Drive)
+                            <i class="fa-brands fa-google-drive mr-1 text-brand-600"></i> PASTA DE MEDIA (DRIVE)
                         </label>
                         <input type="url" value="${appData.videoUrl || ''}" oninput="updateVideoUrl(this.value)" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="https://www.youtube.com/watch?v=...">
                     </div>
