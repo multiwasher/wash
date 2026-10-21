@@ -283,9 +283,13 @@
 
                 <!-- ações sobre o relatório em edição -->
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="sendToGoogleSheets()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center">
+                    <button type="button" id="btn-enviar" onclick="sendToGoogleSheets()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center disabled:opacity-60 disabled:cursor-wait">
                         <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Enviar
                     </button>
+                    <span id="drive-sync-status" class="hidden flex items-center gap-1.5 text-xs font-semibold" role="status" aria-live="polite" aria-atomic="true">
+                        <i id="drive-sync-icon" class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                        <span id="drive-sync-message"></span>
+                    </span>
                     <button type="button" onclick="printReport()" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center">
                         <i class="fa-solid fa-print mr-1.5"></i> Imprimir
                     </button>
@@ -1481,7 +1485,28 @@
             executeGsPost(url);
         }
 
+        function atualizarEstadoSincronizacao(estado, mensagem) {
+            const indicador = document.getElementById('drive-sync-status');
+            const icone = document.getElementById('drive-sync-icon');
+            const texto = document.getElementById('drive-sync-message');
+            const botao = document.getElementById('btn-enviar');
+            if (!indicador || !icone || !texto) return;
+
+            const estados = {
+                enviando: ['text-cyan-200', 'fa-solid fa-spinner fa-spin'],
+                sucesso: ['text-emerald-300', 'fa-solid fa-circle-check'],
+                erro: ['text-rose-300', 'fa-solid fa-circle-exclamation']
+            };
+            const [cor, classeIcone] = estados[estado];
+            indicador.classList.remove('hidden', 'text-cyan-200', 'text-emerald-300', 'text-rose-300');
+            indicador.classList.add(cor);
+            icone.className = classeIcone;
+            texto.textContent = mensagem;
+            if (botao) botao.disabled = estado === 'enviando';
+        }
+
         function executeGsPost(url) {
+            atualizarEstadoSincronizacao('enviando', 'A sincronizar com o Drive...');
             showToast("A enviar dados para o Google Sheet...");
 
             // 'text/plain' evita o preflight CORS e o Apps Script continua a ler o JSON.
@@ -1498,16 +1523,19 @@
                     const f = res.fotos_guardadas;
                     showToast(`Gravado: ${n} linha${n > 1 ? 's' : ''} no Sheet` +
                               (f ? `, ${f} foto${f > 1 ? 's' : ''} no Drive` : '') + '.');
+                    atualizarEstadoSincronizacao('sucesso', 'Pasta do Drive sincronizada');
                     if (res.id) delete cacheSheet[res.id];
                     if (listaSheet.length > 0) carregarHistoricoSheet();
                 } else {
                     console.error("Resposta do Apps Script:", res);
                     showToast("Erro no Sheet: " + ((res && res.error) || "resposta inválida"));
+                    atualizarEstadoSincronizacao('erro', 'Erro na sincronização com o Drive');
                 }
             })
             .catch((err) => {
                 console.error("Erro no envio:", err);
                 showToast("Erro ao comunicar com o Google Sheets. Verifique o URL /exec e as permissões.");
+                atualizarEstadoSincronizacao('erro', 'Erro na sincronização com o Drive');
             });
         }
 
