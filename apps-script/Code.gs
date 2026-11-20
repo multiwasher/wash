@@ -68,7 +68,8 @@ var HEADERS = [
   "Vídeo URL",
   "Pasta Drive (URL)",
   "Resumo Executivo Manual (JSON)",
-  "Resumo IA (texto)"
+  "Resumo IA (texto)",
+  "EXTRAS"
 ];
 
 var LOGO_SOMENGIL = "https://res.cloudinary.com/dlkkjtgvy/image/upload/v1786032688/1_SOMENGIL_PNG_LOGO__p1z4co.png";
@@ -139,7 +140,8 @@ function doPost(e) {
         txt(d.consideracoesPrevias), txt(d.consideracoes), txt(d.conclusao),
         txt(fotosJson), txt(d.videoUrl), txt(pastaUrl),
         txt(d.resumoManual ? JSON.stringify(d.resumoManual) : ""),
-        txt(d.resumoIA)
+        txt(d.resumoIA),
+        txt(u.extras)
       ];
     });
 
@@ -295,6 +297,7 @@ function lerRelatorio(id) {
     utensilios: linhas.map(function (r) {
       return {
         tipo: String(r[11]), material: String(r[12]), sujidade: String(r[13]), objetivo: String(r[14]),
+        extras: String(r[29] || ""),
         vaporIni: String(r[15]), lavagem: String(r[16]), centrifInter: String(r[17]),
         enxague: String(r[18]), centrifFin: String(r[19]), vaporFin: String(r[20])
       };
@@ -823,11 +826,12 @@ function paginaRelatorio(r, lang) {
       +     esc(L.utensilio_de.replace("{n}", i + 1).replace("{t}", r.utensilios.length))
       +   '</h3>'
       +   '<div class="border border-slate-200 border-t-0 rounded-b-lg p-3 space-y-2 text-xs">'
-      +     '<div class="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-slate-50 p-2 rounded">'
+      +     '<div class="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-slate-50 p-2 rounded">'
       +       '<div><strong class="text-slate-600">' + esc(L.utensilio) + ':</strong> ' + ou(u.tipo) + '</div>'
       +       '<div><strong class="text-slate-600">' + esc(L.material) + ':</strong> ' + ou(u.material) + '</div>'
       +       '<div><strong class="text-slate-600">' + esc(L.sujidade) + ':</strong> ' + ou(u.sujidade) + '</div>'
       +       '<div><strong class="text-slate-600">' + esc(L.objetivo) + ':</strong> ' + ou(u.objetivo) + '</div>'
+      +       '<div><strong class="text-slate-600">' + esc(L.extras) + ':</strong> ' + ou(u.extras) + '</div>'
       +     '</div>'
       +     '<div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[10px] text-center pt-1">'
       +       celula(L.vapor_ini, u.vaporIni) + celula(L.lavagem, u.lavagem)
@@ -1025,6 +1029,7 @@ function normalizarUtensilios(d) {
     var u = {
       tipo: d["utensilio" + n] || "", material: d["material" + n] || "",
       sujidade: d["sujidade" + n] || "", objetivo: d["objetivo" + n] || "",
+      extras: d["extras" + n] || "",
       vaporIni: d["prog" + n + "VaporIni"] || "", lavagem: d["prog" + n + "Lavagem"] || "",
       centrifInter: d["prog" + n + "CentrifInter"] || "", enxague: d["prog" + n + "Enxague"] || "",
       centrifFin: d["prog" + n + "CentrifFin"] || "", vaporFin: d["prog" + n + "VaporFin"] || ""
@@ -1084,6 +1089,7 @@ var LABELS = {
     "material": "Material",
     "sujidade": "Sujidade",
     "objetivo": "Objetivo",
+    "extras": "Extras",
     "vapor_ini": "Vapor Inicial",
     "lavagem": "Lavagem",
     "centr_inter": "Centr. Interm.",
@@ -1123,6 +1129,7 @@ var LABELS = {
     "material": "Material",
     "sujidade": "Soiling",
     "objetivo": "Objective",
+    "extras": "Extras",
     "vapor_ini": "Initial steam",
     "lavagem": "Wash",
     "centr_inter": "Interm. spin",
@@ -1162,6 +1169,7 @@ var LABELS = {
     "material": "Material",
     "sujidade": "Suciedad",
     "objetivo": "Objetivo",
+    "extras": "Extras",
     "vapor_ini": "Vapor inicial",
     "lavagem": "Lavado",
     "centr_inter": "Centrif. interm.",
@@ -1201,6 +1209,7 @@ var LABELS = {
     "material": "Matériau",
     "sujidade": "Salissure",
     "objetivo": "Objectif",
+    "extras": "Extras",
     "vapor_ini": "Vapeur initiale",
     "lavagem": "Lavage",
     "centr_inter": "Essorage interm.",
@@ -1240,6 +1249,7 @@ var LABELS = {
     "material": "Material",
     "sujidade": "Verschmutzung",
     "objetivo": "Ziel",
+    "extras": "Extras",
     "vapor_ini": "Dampf am Anfang",
     "lavagem": "Waschen",
     "centr_inter": "Zwischenschleudern",
@@ -1279,6 +1289,7 @@ var LABELS = {
     "material": "Materiale",
     "sujidade": "Sporco",
     "objetivo": "Obiettivo",
+    "extras": "Extras",
     "vapor_ini": "Vapore iniziale",
     "lavagem": "Lavaggio",
     "centr_inter": "Centrifuga interm.",

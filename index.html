@@ -1642,11 +1642,14 @@
             { v: "Manutenção diária", l: "Manutenção diária" },
             { v: "LIMPEZA 100% SEM RESTOS SÓLIDOS NO INTERIOR DA MÁQUINA", l: "LIMPEZA 100% SEM RESTOS SÓLIDOS" },
             { v: "Descarbonização", l: "Descarbonização" },
+            { v: "Descalcificação", l: "Descalcificação" },
+            { v: "Sujidade inorgânica", l: "Sujidade inorgânica" },
             { v: "Manutenção diária + descarbonização gradual", l: "Manutenção diária + descarbonização gradual" },
             { v: "Desinfeção", l: "Desinfeção" },
             { v: "Secagem (Sim)", l: "Secagem (Sim)" },
             { v: "Secagem (Não)", l: "Secagem (Não)" }
         ];
+        const OPCOES_EXTRAS = ["SDS - Spinning Dryer System","EXD - Extra Door","DRD - Diaphragm Rinse Dosing Pump","ATD - Automatic Door","RPK - Reinforcement Plate Kit","IVS - Pressure Variation System","CRE - Grunfos Pressure Variation System","UL - UL Requirements","EFS - External Filter System","HMI - Extra HMI","AWT - Automatic Water Tank Replacement","STM - Steam","QLD - Chemical level detection","CIC - Customized Internal Cage","CSA - Canadian Standards Association","RPKP - Reinforcement Plate Kit Plus"];
 
         const CAMPOS_PROGRAMA = [
             { k: "vaporIni", label: "Vapor Inicial", ph: "Ex: 3 min @ 100°C" },
@@ -1658,7 +1661,7 @@
         ];
 
         function utensilioVazio() {
-            return { tipo: "", material: "", sujidade: "", objetivo: "", vaporIni: "", lavagem: "", centrifInter: "", enxague: "", centrifFin: "", vaporFin: "" };
+            return { tipo: "", material: "", sujidade: "", objetivo: "", extras: "", vaporIni: "", lavagem: "", centrifInter: "", enxague: "", centrifFin: "", vaporFin: "" };
         }
 
         // Converte o formato antigo (utensilio1 / utensilio2) para a lista nova
@@ -1672,6 +1675,7 @@
                     material: d["material" + n] || "",
                     sujidade: d["sujidade" + n] || "",
                     objetivo: d["objetivo" + n] || "",
+                    extras: d["extras" + n] || "",
                     vaporIni: d["prog" + n + "VaporIni"] || "",
                     lavagem: d["prog" + n + "Lavagem"] || "",
                     centrifInter: d["prog" + n + "CentrifInter"] || "",
@@ -1887,6 +1891,7 @@
                 add('material', u.material);
                 add('sujidade', u.sujidade);
                 add('objetivo do ensaio', u.objetivo);
+                add('extras', u.extras);
                 CAMPOS_PROGRAMA.forEach(c => add(c.label.toLowerCase(), u[c.k]));
                 if (detalhes.length) linhas.push(`Utensílio ${i + 1} — ` + detalhes.join('; '));
             });
@@ -2001,7 +2006,7 @@
                     </div>
 
                     <div class="p-4 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">TIPO DE UTENSÍLIO</label>
                                 <select onchange="updateUtensilio(${i}, 'tipo', this.value, true)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
@@ -2024,6 +2029,12 @@
                                 <label class="block text-xs font-bold text-slate-700 mb-1">OBJETIVO DO ENSAIO</label>
                                 <select onchange="updateUtensilio(${i}, 'objetivo', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
                                     ${opcoesHtml(OPCOES_OBJETIVO, u.objetivo, 'Selecione o Objetivo...')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">EXTRAS</label>
+                                <select onchange="updateUtensilio(${i}, 'extras', this.value)" class="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    ${opcoesHtml(OPCOES_EXTRAS, u.extras, 'Selecione o Extra...')}
                                 </select>
                             </div>
                         </div>
@@ -2113,11 +2124,12 @@
                         Utensílio ${i + 1} de ${lista.length}: Especificação do Ensaio
                     </h3>
                     <div class="border border-slate-200 border-t-0 rounded-b-lg p-3 space-y-2 text-xs">
-                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-slate-50 p-2 rounded">
+                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-slate-50 p-2 rounded">
                             <div><strong class="text-slate-600">Utensílio:</strong> ${u.tipo || '—'}</div>
                             <div><strong class="text-slate-600">Material:</strong> ${u.material || '—'}</div>
                             <div><strong class="text-slate-600">Sujidade:</strong> ${u.sujidade || '—'}</div>
                             <div><strong class="text-slate-600">Objetivo:</strong> ${u.objetivo || '—'}</div>
+                            <div><strong class="text-slate-600">Extras:</strong> ${u.extras || '—'}</div>
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[10px] text-center pt-1">
                             <div class="bg-slate-100 p-1.5 rounded border border-slate-200"><span class="block font-bold text-slate-500">Vapor Inicial</span><span class="font-semibold">${u.vaporIni || '—'}</span></div>
