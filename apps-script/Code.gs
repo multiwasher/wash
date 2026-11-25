@@ -909,7 +909,7 @@ function paginaRelatorio(r, lang) {
 +     bloco(L.cons_praticas, r.consideracoes)
 +     '<div class="bg-brand-50 border border-brand-200 p-3 rounded-lg">'
 +       '<p class="font-black text-brand-800 uppercase text-[11px] tracking-wide mb-1">' + esc(L.conclusao) + '</p>'
-+       '<p class="text-slate-700 leading-relaxed">' + ou(r.conclusao) + '</p>'
++       '<p class="text-slate-700 leading-relaxed whitespace-pre-wrap break-words">' + ou(r.conclusao) + '</p>'
 +     '</div>'
 +   '</div>'
 
@@ -957,20 +957,27 @@ function paginaRelatorio(r, lang) {
 + '</body></html>';
 }
 
-// Barra para o destinatário mudar de idioma na própria página
+// Barra de idioma da página. Só o idioma em que o relatório foi partilhado
+// fica ativo; os restantes aparecem desativados (sem link).
+// Nota: no href usa-se "&amp;lang=" — um "&lang=" cru é lido pelo browser
+// como a entidade &lang; (⟨) e o ID chegava corrompido ("ID⟨=es").
 function barraIdiomas(id, lang, L) {
   var atual = idiomaValido(lang) || "";
   var base = ScriptApp.getService().getUrl() + "?id=" + encodeURIComponent(id);
+  var cls = "px-2.5 py-1 rounded-md text-[11px] font-bold transition ";
 
+  function botao(codigo, texto, corAtivo) {
+    if (codigo === atual) {
+      var href = codigo ? base + "&amp;lang=" + codigo : base;
+      return '<a href="' + href + '" aria-current="true" class="' + cls + corAtivo + ' text-white">' + esc(texto) + '</a>';
+    }
+    return '<span aria-disabled="true" class="' + cls + 'text-slate-500 opacity-40 cursor-not-allowed select-none">' + esc(texto) + '</span>';
+  }
+
+  var original = botao("", "Original", "bg-slate-600");
   var links = Object.keys(IDIOMAS).map(function (k) {
-    var activo = (k === atual);
-    return '<a href="' + base + '&lang=' + k + '" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition '
-      + (activo ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-white/10') + '">'
-      + k.toUpperCase() + '</a>';
+    return botao(k, k.toUpperCase(), "bg-brand-600");
   }).join("");
-
-  var original = '<a href="' + base + '" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition '
-    + (atual ? 'text-slate-300 hover:bg-white/10' : 'bg-slate-600 text-white') + '">Original</a>';
 
   return '<div class="border-t border-white/10">'
     + '<div class="max-w-5xl mx-auto px-4 py-2 flex flex-wrap items-center gap-1.5">'
@@ -994,7 +1001,7 @@ function celula(rotulo, valor) {
 function bloco(titulo, texto) {
   return '<div class="bg-slate-50 border border-slate-200 p-3 rounded-lg">'
     + '<p class="font-black text-slate-600 uppercase text-[11px] tracking-wide mb-1">' + esc(titulo) + '</p>'
-    + '<p class="text-slate-700 leading-relaxed">' + ou(texto) + '</p></div>';
+    + '<p class="text-slate-700 leading-relaxed whitespace-pre-wrap break-words">' + ou(texto) + '</p></div>';
 }
 
 function paginaErro(id, lang) {
@@ -1345,10 +1352,34 @@ function traduzir(texto, lang) {
   }
 }
 
+// Traduz texto multi-linha mantendo quebras de linha, linhas vazias, marcadores e tabs.
+// O LanguageApp em modo texto junta tudo numa linha; em modo HTML respeita os <br>.
+function traduzirMultilinha(texto, lang) {
+  var s = String(texto || "").replace(/\r\n?/g, "\n");
+  if (!s.trim()) return s;
+  var html = esc(s)
+    .replace(/\t/g, '<span class="t"></span>')
+    .replace(/\n/g, "<br>");
+  var out;
+  try {
+    out = LanguageApp.translate(html, "", lang, { contentType: "html" });
+  } catch (err) {
+    Logger.log("Tradução falhou (quota?): " + err);
+    return s;
+  }
+  return String(out)
+    .replace(/\s*<br\s*\/?>\s?/gi, "\n")
+    .replace(/<span class="?t"?>\s*<\/span>\s*/gi, "\t")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
 function traduzirRelatorio(rep, lang) {
   if (!idiomaValido(lang)) return rep;
 
-  var chave = rep.id + "|" + lang;
+  var chave = rep.id + "|" + lang + "|v2";   // v2: traduções antigas perdiam as quebras de linha
   var guardado = lerTraducao(chave);
   if (guardado) return guardado;
 
@@ -1356,9 +1387,9 @@ function traduzirRelatorio(rep, lang) {
 
   // não se traduzem nomes próprios, datas, números de série nem endereços
   t.setor = traduzir(t.setor, lang);
-  t.consideracoesPrevias = traduzir(t.consideracoesPrevias, lang);
-  t.consideracoes = traduzir(t.consideracoes, lang);
-  t.conclusao = traduzir(t.conclusao, lang);
+  t.consideracoesPrevias = traduzirMultilinha(t.consideracoesPrevias, lang);
+  t.consideracoes = traduzirMultilinha(t.consideracoes, lang);
+  t.conclusao = traduzirMultilinha(t.conclusao, lang);
 
   (t.utensilios || []).forEach(function (u) {
     ["tipo", "material", "sujidade", "objetivo", "vaporIni", "lavagem",
